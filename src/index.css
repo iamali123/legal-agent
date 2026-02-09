@@ -1,0 +1,75 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Dark mode colors (default) */
+    --background: 222 100% 3%; /* #020817 body bg */
+    --foreground: 0 0% 100%;
+    --card: 222 100% 3%;
+    --card-foreground: 0 0% 100%;
+    --popover: 222 100% 3%;
+    --popover-foreground: 0 0% 100%;
+    --primary: 188 100% 50%;
+    --primary-foreground: 222 100% 3%;
+    --secondary: 220 13% 65%;
+    --secondary-foreground: 222 100% 3%;
+    --muted: 220 13% 65%;
+    --muted-foreground: 220 13% 65%;
+    --accent: 188 100% 50%;
+    --accent-foreground: 222 100% 3%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 13% 20%;
+    --input: 220 13% 20%;
+    --ring: 188 100% 50%;
+    --radius: 0.5rem;
+
+    /* Custom colors */
+    --background-dark: 222 100% 3%; /* #020817 */
+    --primary-accent-dark: 188 100% 50%; /* #00D9FF */
+    --muted-text-dark: 220 13% 65%; /* #99A1AF */
+    --primary-text-dark: 0 0% 100%; /* #FFFFFF */
+    
+    /* Brand colors for CSS usage */
+    --brand-primary-light: #3244DD;
+    --brand-heading-dark: #364153;
+    --brand-secondary-text: #6B6C6E;
+    --brand-background-dark: #020817;
+    --brand-accent-dark: #00D9FF;
+    --brand-muted-text-dark: #99A1AF;
+
+    /* Body background */
+    --body-bg: #020817;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    background-color: var(--body-bg);
+    @apply text-foreground;
+    font-family: 'Poppins', sans-serif;
+  }
+}
+
+/* Custom gradient utilities */
+.gradient-horizontal-cyan {
+  background: linear-gradient(90deg, rgba(0, 217, 255, 0.1) 0%, rgba(0, 0, 0, 0) 100%);
+}
+
+.gradient-vertical-cyan {
+  background: linear-gradient(180deg, var(--brand-accent-dark) 0%, #00A8B5 100%);
+}
+
+/* Subtle loading pulse for async states */
+@keyframes loading-pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+.animate-loading-pulse {
+  animation: loading-pulse 1.5s ease-in-out infinite;
+}
