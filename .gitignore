@@ -11,6 +11,8 @@ node_modules
 dist
 dist-ssr
 *.local
+API_CONTRACT.md
+API_IMPLEMENTATION.md
 
 # Editor directories and files
 .vscode/*

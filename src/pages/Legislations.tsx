@@ -6,48 +6,79 @@ import { CreateLegislationDialog } from '@/components/CreateLegislationDialog'
 import { CornerAccents } from '@/components/CornerAccents'
 import { cn } from '@/lib/utils'
 import { PageHeader } from '@/components/layout/PageHeader'
+import {
+  useLegislations,
+  useCreateLegislation,
+  useGenerateLegislationDraft,
+} from '@/hooks/api'
+import type { LegislationJurisdiction } from '@/types/legislation.types'
 
-const summaryCards = [
-  { label: 'TOTAL LEGISLATIONS', value: '247', color: 'text-brand-accent-dark' },
-  { label: 'DRAFT', value: '23', color: 'text-orange-500' },
-  { label: 'PUBLISHED', value: '198', color: 'text-green-500' },
-  { label: 'AMENDMENTS PENDING', value: '12', color: 'text-purple-500' },
-  { label: 'AI-FLAGGED RISKS', value: '8', color: 'text-red-500' },
-]
+function deriveLegislationStats(items: { status: string; aiFlags: { type: string } }[]) {
+  return {
+    total: items.length,
+    draft: items.filter((i) => i.status === 'draft').length,
+    published: items.filter((i) => i.status === 'published').length,
+    amendmentsPending: items.filter((i) => i.status === 'amended').length,
+    aiFlaggedRisks: items.filter((i) => i.aiFlags?.type === 'warning').length,
+  }
+}
 
-const legislations = [
-  {
-    title: 'Data Protection Act 2024',
-    jurisdiction: 'Federal',
-    status: 'draft',
-    lastUpdated: '2024-01-15',
-    aiFlags: { type: 'warning', count: 2 },
-  },
-  {
-    title: 'Environmental Compliance Law',
-    jurisdiction: 'Emirate',
-    status: 'active',
-    lastUpdated: '2024-01-10',
-    aiFlags: { type: 'clean' },
-  },
-  {
-    title: 'Labor Rights Amendment',
-    jurisdiction: 'Federal',
-    status: 'active',
-    lastUpdated: '2024-01-08',
-    aiFlags: { type: 'warning', count: 1 },
-  },
-  {
-    title: 'Corporate Governance Framework',
-    jurisdiction: 'Emirate',
-    status: 'draft',
-    lastUpdated: '2024-01-05',
-    aiFlags: { type: 'warning', count: 3 },
-  },
+const summaryCardConfig = [
+  { key: 'total' as const, label: 'TOTAL LEGISLATIONS', color: 'text-brand-accent-dark' },
+  { key: 'draft' as const, label: 'DRAFT', color: 'text-orange-500' },
+  { key: 'published' as const, label: 'PUBLISHED', color: 'text-green-500' },
+  { key: 'amendmentsPending' as const, label: 'AMENDMENTS PENDING', color: 'text-purple-500' },
+  { key: 'aiFlaggedRisks' as const, label: 'AI-FLAGGED RISKS', color: 'text-red-500' },
 ]
 
 export function Legislations() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
+
+  const { data: listData, isLoading, error } = useLegislations()
+  const createMutation = useCreateLegislation()
+  const generateDraftMutation = useGenerateLegislationDraft()
+
+  const items = listData?.data?.items ?? []
+  const stats = deriveLegislationStats(items)
+
+  const handleSaveDraft = (form: { title: string; jurisdiction: string; description: string }) => {
+    createMutation.mutate(
+      {
+        title: form.title,
+        jurisdiction: form.jurisdiction as LegislationJurisdiction,
+        description: form.description,
+      },
+      {
+        onSuccess: () => setCreateDialogOpen(false),
+      }
+    )
+  }
+
+  const handleGenerateDraft = (form: { title: string; jurisdiction: string; description: string }) => {
+    createMutation.mutate(
+      {
+        title: form.title,
+        jurisdiction: form.jurisdiction as LegislationJurisdiction,
+        description: form.description,
+      },
+      {
+        onSuccess: (res) => {
+          const id = res.data?.id
+          if (id) {
+            generateDraftMutation.mutate({
+              id,
+              data: {
+                title: form.title,
+                jurisdiction: form.jurisdiction as LegislationJurisdiction,
+                description: form.description,
+              },
+            })
+          }
+          setCreateDialogOpen(false)
+        },
+      }
+    )
+  }
 
   return (
     <div className="min-h-screen">
@@ -58,17 +89,17 @@ export function Legislations() {
       {/* Summary Cards */}
       <div className="px-8 pt-6 pb-4 ">
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
-          {summaryCards.map((card) => (
+          {summaryCardConfig.map(({ key, label, color }) => (
             <div
-              key={card.label}
+              key={label}
               className="px-4 py-5 text-center bg-[#0A1628CC] rounded-xl border border-brand-accent-dark/30 overflow-hidden relative"
             >
               <CornerAccents />
               <p className="text-xs text-brand-accent-dark mb-2 uppercase tracking-wide">
-                {card.label}
+                {label}
               </p>
-              <p className={cn('text-3xl font-bold', card.color)}>
-                {card.value}
+              <p className={cn('text-3xl font-bold', color)}>
+                {isLoading ? '—' : stats[key]}
               </p>
               <hr className="border-0 h-px bg-hr-glow mt-2 w-1/2 mx-auto" />
             </div>
@@ -92,15 +123,13 @@ export function Legislations() {
           <CreateLegislationDialog
             open={createDialogOpen}
             onClose={() => setCreateDialogOpen(false)}
-            onSave={(data) => {
-              // Optional: persist draft
-              console.log('Save draft:', data)
-            }}
-            onGenerateDraft={(data) => {
-              // Optional: trigger AI draft generation
-              console.log('Generate draft:', data)
-            }}
+            onSave={handleSaveDraft}
+            onGenerateDraft={handleGenerateDraft}
           />
+
+          {error && (
+            <p className="text-red-400 text-sm py-4">Failed to load legislations. Please try again.</p>
+          )}
 
           {/* Table */}
           <div className="border border-brand-accent-dark/30 rounded-xl overflow-hidden bg-white/5">
@@ -134,70 +163,84 @@ export function Legislations() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/10">
-                  {legislations.map((legislation, index) => (
-                    <tr
-                      key={index}
-                      className="hover:bg-white/5 transition-colors"
-                    >
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-white font-semibold">
-                          {legislation.title}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-brand-muted-text-dark">
-                          {legislation.jurisdiction}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <Badge
-                          variant={
-                            legislation.status === 'draft'
-                              ? 'draft'
-                              : legislation.status === 'active'
-                              ? 'active'
-                              : 'clean'
-                          }
-                        >
-                          {legislation.status.charAt(0).toUpperCase() +
-                            legislation.status.slice(1)}
-                        </Badge>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-brand-muted-text-dark">
-                          {legislation.lastUpdated}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {legislation.aiFlags.type === 'clean' ? (
-                          <div className="flex items-center gap-1">
-                            <CheckCircle2 className="w-4 h-4 text-green-500" />
-                            <span className="text-xs text-green-500">Clean</span>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-1">
-                            <AlertTriangle className="w-4 h-4 text-red-500" />
-                            <span className="text-xs text-red-500">
-                              A{legislation.aiFlags.count}
-                            </span>
-                          </div>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center gap-3">
-                          <button className="text-brand-muted-text-dark hover:text-brand-accent-dark transition-colors">
-                            <Eye className="w-4 h-4" />
-                          </button>
-                          <button className="text-brand-muted-text-dark hover:text-brand-accent-dark transition-colors">
-                            <Pencil className="w-4 h-4" />
-                          </button>
-                          <button className="text-brand-muted-text-dark hover:text-brand-accent-dark transition-colors">
-                          <Sparkles className="w-5 h-5 text-brand-accent-dark" />
-                          </button>
-                        </div>
+                  {isLoading ? (
+                    <tr>
+                      <td colSpan={6} className="px-6 py-8 text-center text-brand-muted-text-dark">
+                        Loading...
                       </td>
                     </tr>
-                  ))}
+                  ) : items.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="px-6 py-8 text-center text-brand-muted-text-dark">
+                        No legislations found.
+                      </td>
+                    </tr>
+                  ) : (
+                    items.map((legislation) => (
+                      <tr
+                        key={legislation.id}
+                        className="hover:bg-white/5 transition-colors"
+                      >
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-white font-semibold">
+                            {legislation.title}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-brand-muted-text-dark">
+                            {legislation.jurisdiction}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <Badge
+                            variant={
+                              legislation.status === 'draft'
+                                ? 'draft'
+                                : legislation.status === 'active'
+                                ? 'active'
+                                : 'clean'
+                            }
+                          >
+                            {(legislation.status as string).charAt(0).toUpperCase() +
+                              (legislation.status as string).slice(1)}
+                          </Badge>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-brand-muted-text-dark">
+                            {legislation.lastUpdated}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {legislation.aiFlags?.type === 'clean' ? (
+                            <div className="flex items-center gap-1">
+                              <CheckCircle2 className="w-4 h-4 text-green-500" />
+                              <span className="text-xs text-green-500">Clean</span>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-1">
+                              <AlertTriangle className="w-4 h-4 text-red-500" />
+                              <span className="text-xs text-red-500">
+                                {legislation.aiFlags?.count != null ? `A${legislation.aiFlags.count}` : '—'}
+                              </span>
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center gap-3">
+                            <button className="text-brand-muted-text-dark hover:text-brand-accent-dark transition-colors">
+                              <Eye className="w-4 h-4" />
+                            </button>
+                            <button className="text-brand-muted-text-dark hover:text-brand-accent-dark transition-colors">
+                              <Pencil className="w-4 h-4" />
+                            </button>
+                            <button className="text-brand-muted-text-dark hover:text-brand-accent-dark transition-colors">
+                              <Sparkles className="w-5 h-5 text-brand-accent-dark" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
