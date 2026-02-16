@@ -1,13 +1,71 @@
 import { useState } from 'react'
-import { Mail, Key, Eye, EyeOff, User } from 'lucide-react'
+import { Mail, Key, Eye, EyeOff, User, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import loginVideo from '@/assets/login-video.mp4'
 import logoImage from '@/assets/mbrhe-logo.png'
+import { useLogin, useUAEPassLogin } from '@/hooks/api'
 
 export function Login() {
   const [showPassword, setShowPassword] = useState(false)
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState<string | null>(null)
+
+  const loginMutation = useLogin()
+  const uaePassMutation = useUAEPassLogin()
+
+  const handleLogin = async () => {
+    if (!email || !password) {
+      setError('Please enter both email and password')
+      return
+    }
+
+    setError(null)
+    try {
+      await loginMutation.mutateAsync({
+        email: email.trim(),
+        password,
+      })
+      // Navigation happens automatically in useLogin hook's onSuccess
+    } catch (err) {
+      const errorMessage =
+        (err as { response?: { data?: { message?: string } }; message?: string })?.response?.data
+          ?.message ||
+        (err as { message?: string })?.message ||
+        'Login failed. Please check your credentials and try again.'
+      setError(errorMessage)
+    }
+  }
+
+  const handleUAEPassLogin = async () => {
+    setError(null)
+    // Note: UAE Pass integration requires OAuth redirect flow
+    // For now, this is a placeholder - you'll need to:
+    // 1. Redirect to UAE Pass authorization URL
+    // 2. Handle callback with authorization code
+    // 3. Exchange code for token
+    // 4. Call uaePassMutation with the token
+    
+    // Example placeholder implementation:
+    alert('UAE Pass integration requires OAuth redirect flow. Please implement the UAE Pass OAuth flow first.')
+    
+    // Uncomment and implement when UAE Pass OAuth is ready:
+    // try {
+    //   const uaePassToken = await getUAEPassToken()
+    //   await uaePassMutation.mutateAsync({
+    //     uaePassToken,
+    //     redirectUri: window.location.origin + '/auth/callback',
+    //   })
+    // } catch (err) {
+    //   const errorMessage =
+    //     (err as { response?: { data?: { message?: string } }; message?: string })?.response?.data?.message ||
+    //     (err as { message?: string })?.message ||
+    //     'UAE Pass authentication failed. Please try again.'
+    //   setError(errorMessage)
+    // }
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 relative">
@@ -39,7 +97,20 @@ export function Login() {
             Please enter your details
           </p>
 
-          <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
+          <form
+            className="space-y-4"
+            onSubmit={(e) => {
+              e.preventDefault()
+              handleLogin()
+            }}
+          >
+            {error && (
+              <div className="rounded-lg bg-red-500/10 border border-red-500/30 p-3 flex items-start gap-2">
+                <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+                <p className="text-sm text-red-400">{error}</p>
+              </div>
+            )}
+
             <div className="space-y-2">
               <Label htmlFor="email" className="text-white">Email</Label>
               <div className="relative">
@@ -48,7 +119,14 @@ export function Login() {
                   id="email"
                   type="email"
                   placeholder="Email"
+                  value={email}
+                  onChange={(e) => {
+                    setEmail(e.target.value)
+                    setError(null)
+                  }}
+                  disabled={loginMutation.isPending}
                   className="pl-10 h-11 rounded-lg border-brand-accent-dark/30 bg-transparent"
+                  required
                 />
               </div>
             </div>
@@ -61,7 +139,14 @@ export function Login() {
                   id="password"
                   type={showPassword ? 'text' : 'password'}
                   placeholder="Password"
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value)
+                    setError(null)
+                  }}
+                  disabled={loginMutation.isPending}
                   className="pl-10 pr-10 h-11 rounded-lg border-brand-accent-dark/30 bg-transparent"
+                  required
                 />
                 <button
                   type="button"
@@ -81,21 +166,27 @@ export function Login() {
             <Button
               type="submit"
               className="w-full text-white"
+              disabled={loginMutation.isPending || !email || !password}
             >
               <User className="w-5 h-5 mr-2" />
-              Sign In
+              {loginMutation.isPending ? 'Signing In...' : 'Sign In'}
             </Button>
           </form>
           <p className="text-center text-brand-secondary-text my-4">OR</p>
-                 {/* UAE Pass Button */}
-                 <button
-                  className="w-full bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-3"
-                >
-                                    <span className="w-6 h-6 flex items-center justify-center">
-                    <img src="/src/assets/uae-pass.webp" alt="UAE Pass" className="w-full" />
-                  </span>
-                  <span className="text-base font-semibold">Continue with UAE PASS</span>
-                </button>
+          {/* UAE Pass Button */}
+          <button
+            type="button"
+            onClick={handleUAEPassLogin}
+            disabled={uaePassMutation.isPending}
+            className="w-full bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <span className="w-6 h-6 flex items-center justify-center">
+              <img src="/src/assets/uae-pass.webp" alt="UAE Pass" className="w-full" />
+            </span>
+            <span className="text-base font-semibold">
+              {uaePassMutation.isPending ? 'Connecting...' : 'Continue with UAE PASS'}
+            </span>
+          </button>
         </div>
 
         {/* Right: Branding with wallpaper - 40% opacity, rotated 90deg */}

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { BookOpen, Calendar, Eye } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { PageHeader } from '@/components/layout/PageHeader'
-import { cn } from '@/lib/utils'
+import { cn, formatDate } from '@/lib/utils'
 import { CornerAccents } from '@/components/CornerAccents'
 import { ViewDocumentDialog, type ViewDocumentDialogData } from '@/components/ViewDocumentDialog'
 import { useLawsPolicies, useLawsPoliciesStats } from '@/hooks/api'
@@ -137,7 +137,7 @@ export function LawsPolicy() {
 
                   <div className="flex items-center gap-1.5 text-sm text-white mb-5">
                     <Calendar className="w-4 h-4 text-brand-accent-dark shrink-0" />
-                    <span className="mt-1">{law.publicationDate}</span>
+                    <span className="mt-1">{formatDate(law.publicationDate)}</span>
                   </div>
 
                   <div className="flex justify-center pt-2 border-t border-brand-accent-dark/20">

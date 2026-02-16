@@ -18,16 +18,115 @@ import type {
 } from '@/types/agreement.types'
 
 /**
+ * Map API agreement type to AgreementType
+ */
+function mapAgreementType(apiType: string): Agreement['type'] {
+  const typeMap: Record<string, Agreement['type']> = {
+    'Memorandum of Understanding': 'Memorandum of Understanding',
+    NDA: 'NDA',
+    SLA: 'SLA',
+    'Joint Venture': 'Joint Venture',
+    Partnership: 'Partnership',
+  }
+  return typeMap[apiType] || 'Other'
+}
+
+/**
+ * Format parties array to string
+ */
+function formatParties(parties: string[] | string): string {
+  if (Array.isArray(parties)) {
+    return parties.join(', ')
+  }
+  return parties
+}
+
+/**
  * Get list of agreements
  */
 export const getAgreements = async (
   params?: AgreementListParams
 ): Promise<ApiSuccessResponse<PaginatedResponse<Agreement>>> => {
-  const response = await apiClient.get<ApiSuccessResponse<PaginatedResponse<Agreement>>>(
+  const response = await apiClient.get<ApiSuccessResponse<Agreement[] | PaginatedResponse<Agreement>>>(
     '/agreements',
     { params }
   )
-  return response.data
+  
+  // Normalize response: API may return direct array or paginated response
+  const responseData = response.data
+  
+  // If data is a direct array, wrap it in paginated format
+  if (Array.isArray(responseData.data)) {
+    const items: Agreement[] = responseData.data.map((item: {
+      id: string
+      title: string
+      parties: string[] | string
+      type: string
+      date: string
+      status: string
+      updatedAt?: string
+      createdAt: string
+      aiSuggestions?: number | null
+    }) => ({
+      id: item.id,
+      title: item.title,
+      parties: formatParties(item.parties),
+      type: mapAgreementType(item.type),
+      date: item.date,
+      status: item.status as Agreement['status'],
+      aiSuggestions: item.aiSuggestions ?? null,
+      createdAt: item.createdAt,
+      lastUpdated: item.updatedAt || item.createdAt,
+    }))
+    
+    return {
+      ...responseData,
+      data: {
+        items,
+        pagination: {
+          page: params?.page || 1,
+          limit: params?.limit || items.length,
+          total: items.length,
+          totalPages: 1,
+        },
+      },
+    }
+  }
+  
+  // If already paginated, normalize items
+  if (responseData.data && 'items' in responseData.data) {
+    const normalizedItems: Agreement[] = responseData.data.items.map((item: {
+      id: string
+      title: string
+      parties: string[] | string
+      type: string
+      date: string
+      status: string
+      updatedAt?: string
+      createdAt: string
+      aiSuggestions?: number | null
+    }) => ({
+      id: item.id,
+      title: item.title,
+      parties: formatParties(item.parties),
+      type: mapAgreementType(item.type),
+      date: item.date,
+      status: item.status as Agreement['status'],
+      aiSuggestions: item.aiSuggestions ?? null,
+      createdAt: item.createdAt,
+      lastUpdated: item.updatedAt || item.createdAt,
+    }))
+    
+    return {
+      ...responseData,
+      data: {
+        ...responseData.data,
+        items: normalizedItems,
+      },
+    }
+  }
+  
+  return response.data as ApiSuccessResponse<PaginatedResponse<Agreement>>
 }
 
 /**

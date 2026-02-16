@@ -1,4 +1,5 @@
 import { Sparkles, FileText, AlertCircle, FileCheck, Calendar } from 'lucide-react'
+import { formatRelativeTime } from '@/lib/utils'
 import { Card, CardContent } from '@/components/ui/card'
 import { DashboardHeader } from '@/components/DashboardHeader'
 import { CornerAccents } from '@/components/CornerAccents'
@@ -147,7 +148,7 @@ export function Dashboard() {
                         <p className="text-sm text-brand-muted-text-dark">{h.description}</p>
                       </div>
                       <span className="text-xs text-brand-accent-dark whitespace-nowrap ml-4">
-                        {h.timestamp}
+                        {formatRelativeTime(h.timestamp)}
                       </span>
                     </div>
                   </CardContent>
@@ -192,7 +193,7 @@ export function Dashboard() {
                           <p className="text-sm font-medium text-brand-accent-dark mb-1">
                             {a.user.name}
                           </p>
-                          <p className="text-xs text-brand-muted-text-dark">{a.timestamp}</p>
+                          <p className="text-xs text-brand-muted-text-dark">{formatRelativeTime(a.timestamp)}</p>
                         </div>
                       </div>
                     </div>

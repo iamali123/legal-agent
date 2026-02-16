@@ -23,11 +23,78 @@ import type {
 export const getLegislations = async (
   params?: LegislationListParams
 ): Promise<ApiSuccessResponse<PaginatedResponse<Legislation>>> => {
-  const response = await apiClient.get<ApiSuccessResponse<PaginatedResponse<Legislation>>>(
+  const response = await apiClient.get<ApiSuccessResponse<Legislation[] | PaginatedResponse<Legislation>>>(
     '/legislations',
     { params }
   )
-  return response.data
+  
+  // Normalize response: API may return direct array or paginated response
+  const responseData = response.data
+  
+  // If data is a direct array, wrap it in paginated format
+  if (Array.isArray(responseData.data)) {
+    const items: Legislation[] = responseData.data.map((item: {
+      id: string
+      title: string
+      jurisdiction: string
+      status: string
+      updatedAt?: string
+      createdAt: string
+      aiFlags?: { type: string; count?: number | null }
+    }) => ({
+      id: item.id,
+      title: item.title,
+      jurisdiction: item.jurisdiction as Legislation['jurisdiction'],
+      status: item.status as Legislation['status'],
+      lastUpdated: item.updatedAt || item.createdAt,
+      createdAt: item.createdAt,
+      aiFlags: item.aiFlags || { type: 'clean' as const },
+    }))
+    
+    return {
+      ...responseData,
+      data: {
+        items,
+        pagination: {
+          page: params?.page || 1,
+          limit: params?.limit || items.length,
+          total: items.length,
+          totalPages: 1,
+        },
+      },
+    }
+  }
+  
+  // If already paginated, normalize items
+  if (responseData.data && 'items' in responseData.data) {
+    const normalizedItems: Legislation[] = responseData.data.items.map((item: {
+      id: string
+      title: string
+      jurisdiction: string
+      status: string
+      updatedAt?: string
+      createdAt: string
+      aiFlags?: { type: string; count?: number | null }
+    }) => ({
+      id: item.id,
+      title: item.title,
+      jurisdiction: item.jurisdiction as Legislation['jurisdiction'],
+      status: item.status as Legislation['status'],
+      lastUpdated: item.updatedAt || item.createdAt,
+      createdAt: item.createdAt,
+      aiFlags: item.aiFlags || { type: 'clean' as const },
+    }))
+    
+    return {
+      ...responseData,
+      data: {
+        ...responseData.data,
+        items: normalizedItems,
+      },
+    }
+  }
+  
+  return response.data as ApiSuccessResponse<PaginatedResponse<Legislation>>
 }
 
 /**

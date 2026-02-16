@@ -6,10 +6,12 @@ import {
   FileCheck, 
   FileSignature,
   CheckSquare2,
-  Sparkles
+  Sparkles,
+  User as UserIcon
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import logoImage from '@/assets/mbrhe-logo.png'
+import { useCurrentUser } from '@/hooks/api'
 
 const navigationItems = [
   { path: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -20,6 +22,86 @@ const navigationItems = [
   { path: '/approvals', label: 'Approvals', icon: CheckSquare2 },
   { path: '/ai-legal', label: 'AI Legal', icon: Sparkles },
 ]
+
+function UserProfile() {
+  const { data: userData, isLoading, error } = useCurrentUser()
+  const user = userData?.data
+
+  // Get user initials from name
+  const getInitials = (name: string | undefined) => {
+    if (!name) return 'U'
+    const parts = name.trim().split(' ')
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+    }
+    return name[0].toUpperCase()
+  }
+
+  // Display role or department
+  const getRoleDisplay = () => {
+    if (user?.role) return user.role
+    if (user?.department) return user.department
+    return 'User'
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex gap-3">
+        <div className="w-10 h-10 rounded-full bg-brand-gradient flex items-center justify-center animate-pulse">
+          <UserIcon className="w-5 h-5 text-white" />
+        </div>
+        <div className="flex-1">
+          <div className="text-sm font-medium text-white animate-pulse bg-white/10 h-4 w-24 rounded mb-2" />
+          <div className="text-xs text-brand-accent-dark animate-pulse bg-white/10 h-3 w-16 rounded" />
+        </div>
+      </div>
+    )
+  }
+
+  if (error || !user) {
+    return (
+      <div className="flex gap-3">
+        <div className="w-10 h-10 rounded-full bg-brand-gradient flex items-center justify-center">
+          <UserIcon className="w-5 h-5 text-white" />
+        </div>
+        <div className="flex-1">
+          <div className="text-sm font-medium text-white">
+            Guest User
+          </div>
+          <div className="text-xs text-brand-accent-dark">
+            Not logged in
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex gap-3">
+      {user.avatar ? (
+        <img
+          src={user.avatar}
+          alt={user.name}
+          className="w-10 h-10 rounded-full object-cover"
+        />
+      ) : (
+        <div className="w-10 h-10 rounded-full bg-brand-gradient flex items-center justify-center">
+          <span className="text-white font-semibold text-sm">
+            {getInitials(user.name)}
+          </span>
+        </div>
+      )}
+      <div className="flex-1 min-w-0">
+        <div className="text-sm font-medium text-white truncate">
+          {user.name}
+        </div>
+        <div className="text-xs text-brand-accent-dark truncate">
+          {getRoleDisplay()}
+        </div>
+      </div>
+    </div>
+  )
+}
 
 export function Sidebar() {
   return (
@@ -74,19 +156,7 @@ export function Sidebar() {
 
       {/* User Profile */}
       <div className="p-4 border-t border-border space-y-3">
-        <div className="flex gap-3">
-        <div className="w-10 h-10 rounded-full bg-brand-gradient flex items-center justify-center">
-            <span className="text-white font-semibold">U</span>
-          </div>
-          <div className="flex-1">
-            <div className="text-sm font-medium text-white">
-              User Name
-            </div>
-            <div className="text-xs text-brand-accent-dark">
-              Legal Officer
-            </div>
-          </div>
-        </div>
+        <UserProfile />
       </div>
     </div>
   )

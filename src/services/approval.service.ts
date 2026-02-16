@@ -19,16 +19,156 @@ import type {
 } from '@/types/approval.types'
 
 /**
+ * Map entityType to ApprovalType (capitalize first letter)
+ */
+function mapEntityTypeToApprovalType(entityType: string): Approval['type'] {
+  const typeMap: Record<string, Approval['type']> = {
+    legislation: 'Legislation',
+    contract: 'Contract',
+    agreement: 'Agreement',
+    policy: 'Policy',
+  }
+  return typeMap[entityType.toLowerCase()] || 'Legislation'
+}
+
+/**
+ * Convert confidence from decimal (0.95) to percentage (95)
+ */
+function convertConfidenceToPercentage(confidence: number): number {
+  // If already > 1, assume it's already a percentage
+  if (confidence > 1) return Math.round(confidence)
+  // Otherwise convert from decimal (0.95 → 95)
+  return Math.round(confidence * 100)
+}
+
+/** Raw approval item as returned by the API (direct array) */
+interface RawApprovalItem {
+  id: string
+  title: string
+  entityType: string
+  entityId: string
+  assigneeId: string
+  submittedById: string
+  assignee: { name: string }
+  submitter: { name: string }
+  dueDate: string
+  priority: string
+  status: string
+  aiRecommendation: string
+  confidence: number
+  createdAt: string
+  updatedAt?: string
+  approvedAt?: string | null
+}
+
+/**
  * Get list of approvals
  */
-export const getApprovals = async (
-  params?: ApprovalListParams
-): Promise<ApiSuccessResponse<PaginatedResponse<Approval>>> => {
-  const response = await apiClient.get<ApiSuccessResponse<PaginatedResponse<Approval>>>(
+export const getApprovals = async (params?: ApprovalListParams): Promise<ApiSuccessResponse<PaginatedResponse<Approval>>> => {
+  const response = await apiClient.get<ApiSuccessResponse<Approval[] | PaginatedResponse<Approval>>>(
     '/approvals',
     { params }
   )
-  return response.data
+  
+  // Normalize response: API may return direct array or paginated response
+  const responseData = response.data
+  
+  // If data is a direct array, wrap it in paginated format
+  if (Array.isArray(responseData.data)) {
+    const rawItems = responseData.data as unknown as RawApprovalItem[]
+    const items: Approval[] = rawItems.map((item) => ({
+      id: item.id,
+      title: item.title,
+      type: mapEntityTypeToApprovalType(item.entityType),
+      entityId: item.entityId,
+      entityType: item.entityType,
+      assignee: {
+        id: item.assigneeId,
+        name: item.assignee?.name ?? '—',
+      },
+      submittedBy: {
+        id: item.submittedById,
+        name: item.submitter?.name ?? '—',
+      },
+      dueDate: item.dueDate,
+      priority: item.priority as Approval['priority'],
+      status: item.status as Approval['status'],
+      aiRecommendation: item.aiRecommendation,
+      confidence: convertConfidenceToPercentage(item.confidence),
+      createdAt: item.createdAt,
+      approvedAt: item.approvedAt ?? null,
+    }))
+    
+    return {
+      ...responseData,
+      data: {
+        items,
+        pagination: {
+          page: params?.page || 1,
+          limit: params?.limit || items.length,
+          total: items.length,
+          totalPages: 1,
+        },
+      },
+    }
+  }
+  
+  // If already paginated, normalize items
+  if (responseData.data && 'items' in responseData.data) {
+    const normalizedItems: Approval[] = responseData.data.items.map((item: {
+      id: string
+      title: string
+      entityType?: string
+      type?: string
+      entityId: string
+      assigneeId?: string
+      submittedById?: string
+      assignee?: { id?: string; name: string }
+      submitter?: { name: string }
+      submittedBy?: { id?: string; name: string }
+      dueDate: string
+      priority: string
+      status: string
+      aiRecommendation: string
+      confidence: number
+      createdAt: string
+      updatedAt?: string
+      approvedAt?: string | null
+    }) => ({
+      id: item.id,
+      title: item.title,
+      type: item.type 
+        ? (item.type as Approval['type'])
+        : mapEntityTypeToApprovalType(item.entityType || 'legislation'),
+      entityId: item.entityId,
+      entityType: item.entityType || 'legislation',
+      assignee: {
+        id: item.assigneeId || item.assignee?.id || '',
+        name: item.assignee?.name ?? '—',
+      },
+      submittedBy: {
+        id: item.submittedById || item.submittedBy?.id || '',
+        name: item.submitter?.name ?? item.submittedBy?.name ?? '—',
+      },
+      dueDate: item.dueDate,
+      priority: item.priority as Approval['priority'],
+      status: item.status as Approval['status'],
+      aiRecommendation: item.aiRecommendation,
+      confidence: convertConfidenceToPercentage(item.confidence),
+      createdAt: item.createdAt,
+      approvedAt: item.approvedAt ?? null,
+    }))
+    
+    return {
+      ...responseData,
+      data: {
+        ...responseData.data,
+        items: normalizedItems,
+      },
+    }
+  }
+  
+  return response.data as ApiSuccessResponse<PaginatedResponse<Approval>>
 }
 
 /**

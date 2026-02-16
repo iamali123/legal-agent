@@ -18,16 +18,139 @@ import type {
 } from '@/types/contract.types'
 
 /**
+ * Format contract value from numeric and currency
+ */
+function formatContractValue(valueNumeric: string | number, currency: string): string {
+  const num = typeof valueNumeric === 'string' ? parseFloat(valueNumeric) : valueNumeric
+  if (isNaN(num)) return `${currency} 0`
+  // Format with commas for thousands
+  const formatted = num.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })
+  return `${currency} ${formatted}`
+}
+
+/**
+ * Map API contract type to ContractType
+ */
+function mapContractType(apiType: string): Contract['type'] {
+  const typeMap: Record<string, Contract['type']> = {
+    Service: 'Service Agreement',
+    Lease: 'Lease',
+    License: 'License',
+    NDA: 'NDA',
+    'Service Agreement': 'Service Agreement',
+  }
+  return typeMap[apiType] || 'Other'
+}
+
+/**
  * Get list of contracts
  */
 export const getContracts = async (
   params?: ContractListParams
 ): Promise<ApiSuccessResponse<PaginatedResponse<Contract>>> => {
-  const response = await apiClient.get<ApiSuccessResponse<PaginatedResponse<Contract>>>(
+  const response = await apiClient.get<ApiSuccessResponse<Contract[] | PaginatedResponse<Contract>>>(
     '/contracts',
     { params }
   )
-  return response.data
+  
+  // Normalize response: API may return direct array or paginated response
+  const responseData = response.data
+  
+  // If data is a direct array, wrap it in paginated format
+  if (Array.isArray(responseData.data)) {
+    const items: Contract[] = responseData.data.map((item: {
+      id: string
+      title: string
+      counterparty: string
+      type: string
+      valueNumeric: string | number
+      currency: string
+      startDate: string
+      endDate: string
+      durationMonths?: number | null
+      status: string
+      updatedAt?: string
+      createdAt: string
+      aiFlags?: number | null
+    }) => ({
+      id: item.id,
+      title: item.title,
+      counterparty: item.counterparty,
+      type: mapContractType(item.type),
+      value: formatContractValue(item.valueNumeric, item.currency),
+      valueNumeric: typeof item.valueNumeric === 'string' ? parseFloat(item.valueNumeric) : item.valueNumeric,
+      currency: item.currency,
+      startDate: item.startDate,
+      endDate: item.endDate,
+      durationMonths: item.durationMonths ?? null,
+      status: item.status as Contract['status'],
+      aiFlags: item.aiFlags ?? null,
+      createdAt: item.createdAt,
+      lastUpdated: item.updatedAt || item.createdAt,
+    }))
+    
+    return {
+      ...responseData,
+      data: {
+        items,
+        pagination: {
+          page: params?.page || 1,
+          limit: params?.limit || items.length,
+          total: items.length,
+          totalPages: 1,
+        },
+      },
+    }
+  }
+  
+  // If already paginated, normalize items
+  if (responseData.data && 'items' in responseData.data) {
+    const normalizedItems: Contract[] = responseData.data.items.map((item: {
+      id: string
+      title: string
+      counterparty: string
+      type: string
+      valueNumeric?: string | number
+      currency?: string
+      value?: string
+      startDate: string
+      endDate: string
+      durationMonths?: number | null
+      status: string
+      updatedAt?: string
+      createdAt: string
+      aiFlags?: number | null
+    }) => ({
+      id: item.id,
+      title: item.title,
+      counterparty: item.counterparty,
+      type: mapContractType(item.type),
+      value: item.value || (item.valueNumeric && item.currency 
+        ? formatContractValue(item.valueNumeric, item.currency)
+        : '—'),
+      valueNumeric: item.valueNumeric 
+        ? (typeof item.valueNumeric === 'string' ? parseFloat(item.valueNumeric) : item.valueNumeric)
+        : 0,
+      currency: item.currency || '',
+      startDate: item.startDate,
+      endDate: item.endDate,
+      durationMonths: item.durationMonths ?? null,
+      status: item.status as Contract['status'],
+      aiFlags: item.aiFlags ?? null,
+      createdAt: item.createdAt,
+      lastUpdated: item.updatedAt || item.createdAt,
+    }))
+    
+    return {
+      ...responseData,
+      data: {
+        ...responseData.data,
+        items: normalizedItems,
+      },
+    }
+  }
+  
+  return response.data as ApiSuccessResponse<PaginatedResponse<Contract>>
 }
 
 /**

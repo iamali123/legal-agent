@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { CreateAgreementDialog } from '@/components/CreateAgreementDialog'
 import { ViewAgreementDialog, type ViewAgreementDialogData } from '@/components/ViewAgreementDialog'
-import { cn } from '@/lib/utils'
+import { cn, formatDate } from '@/lib/utils'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { CornerAccents } from '@/components/CornerAccents'
 import {
@@ -195,7 +195,7 @@ export function Agreements() {
                       </div>
                       <div className="flex items-center gap-1.5 text-sm text-brand-muted-text-dark mb-5">
                         <Calendar className="w-4 h-4 text-brand-accent-dark shrink-0" />
-                        <span className="mt-1">{agreement.date}</span>
+                        <span className="mt-1">{formatDate(agreement.date)}</span>
                       </div>
                     </div>
 

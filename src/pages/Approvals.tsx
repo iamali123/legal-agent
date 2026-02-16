@@ -5,7 +5,7 @@ import {
   ApprovalViewDialog,
   type ApprovalViewDialogData,
 } from '@/components/ApprovalViewDialog'
-import { cn } from '@/lib/utils'
+import { cn, formatDate } from '@/lib/utils'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { CornerAccents } from '@/components/CornerAccents'
 import {
@@ -216,7 +216,7 @@ export function Approvals() {
                       </div>
                       <div className="flex items-center gap-2 text-sm text-brand-muted-text-dark">
                         <Calendar className="w-4 h-4 shrink-0" />
-                        <span>Due: {approval.dueDate}</span>
+                        <span>Due: {formatDate(approval.dueDate)}</span>
                       </div>
                     </div>
 

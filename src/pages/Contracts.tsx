@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { CreateContractDialog } from '@/components/CreateContractDialog'
 import { ViewContractDialog, type ViewContractDialogData } from '@/components/ViewContractDialog'
-import { cn } from '@/lib/utils'
+import { cn, formatDate } from '@/lib/utils'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { CornerAccents } from '@/components/CornerAccents'
 import {
@@ -200,7 +200,7 @@ export function Contracts() {
                       <div className="flex justify-between items-baseline text-sm">
                         <span className="text-brand-accent-dark/60">Duration:</span>
                         <span className="text-brand-muted-text-dark">
-                          {contract.startDate} → {contract.endDate}
+                          {formatDate(contract.startDate)} → {formatDate(contract.endDate)}
                         </span>
                       </div>
                     </div>

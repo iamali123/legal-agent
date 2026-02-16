@@ -3,8 +3,9 @@ import { Eye, Pencil, AlertTriangle, CheckCircle2, Plus, Sparkles } from 'lucide
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { CreateLegislationDialog } from '@/components/CreateLegislationDialog'
+import { ViewLegislationDialog } from '@/components/ViewLegislationDialog'
 import { CornerAccents } from '@/components/CornerAccents'
-import { cn } from '@/lib/utils'
+import { cn, formatDate } from '@/lib/utils'
 import { PageHeader } from '@/components/layout/PageHeader'
 import {
   useLegislations,
@@ -33,6 +34,7 @@ const summaryCardConfig = [
 
 export function Legislations() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
+  const [viewLegislationId, setViewLegislationId] = useState<string | null>(null)
 
   const { data: listData, isLoading, error } = useLegislations()
   const createMutation = useCreateLegislation()
@@ -207,7 +209,7 @@ export function Legislations() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm text-brand-muted-text-dark">
-                            {legislation.lastUpdated}
+                            {formatDate(legislation.lastUpdated)}
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
@@ -227,7 +229,12 @@ export function Legislations() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center gap-3">
-                            <button className="text-brand-muted-text-dark hover:text-brand-accent-dark transition-colors">
+                            <button
+                              type="button"
+                              onClick={() => setViewLegislationId(legislation.id)}
+                              className="text-brand-muted-text-dark hover:text-brand-accent-dark transition-colors"
+                              aria-label="View details"
+                            >
                               <Eye className="w-4 h-4" />
                             </button>
                             <button className="text-brand-muted-text-dark hover:text-brand-accent-dark transition-colors">
@@ -247,6 +254,12 @@ export function Legislations() {
           </div>
         </div>
       </div>
+
+      <ViewLegislationDialog
+        open={!!viewLegislationId}
+        legislationId={viewLegislationId}
+        onClose={() => setViewLegislationId(null)}
+      />
     </div>
   )
 }
