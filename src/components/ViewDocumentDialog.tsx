@@ -56,7 +56,8 @@ export function ViewDocumentDialog({
         </div>
 
         {/* Information grid: 2x2 dark cards */}
-        <div className="px-6 pb-4 grid grid-cols-2 gap-3">
+        <div className="px-6 pb-4 flex-1 min-h-0 overflow-y-auto sidebar-nav-scroll">
+          <div className="grid grid-cols-2 gap-3">
           <div className="rounded-xl bg-[#0A162880] border border-brand-accent-dark/20 px-4 py-3">
             <p className="text-xs text-brand-accent-dark uppercase tracking-wide mb-1">
               Authority
@@ -81,10 +82,10 @@ export function ViewDocumentDialog({
             </p>
             <p className="text-sm font-medium text-white">{data.category}</p>
           </div>
-        </div>
+          </div>
 
-        {/* AI Summary */}
-        <div className="px-6 pb-4">
+          {/* AI Summary */}
+          <div className="mt-4">
           <div className="rounded-xl bg-[#0A162880] border border-brand-accent-dark/20 p-4">
             <p className="text-xs text-brand-accent-dark uppercase tracking-wide mb-2 flex items-center gap-1.5">
               AI Summary
@@ -93,6 +94,7 @@ export function ViewDocumentDialog({
             <Sparkles className="w-5 h-5 text-brand-accent-dark" />
               {data.aiSummary}
             </p>
+          </div>
           </div>
         </div>
 

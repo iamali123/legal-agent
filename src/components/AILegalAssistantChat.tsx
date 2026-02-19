@@ -14,7 +14,13 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
-import { useSendChatMessage, useChatHistory } from '@/hooks/api'
+import {
+  useSendChatMessage,
+  useChatHistory,
+  useCreateConversation,
+  useSendMessage,
+  useConversation,
+} from '@/hooks/api'
 
 const SUGGESTED_ACTIONS = [
   { label: 'Summarize', icon: FileText },
@@ -48,41 +54,105 @@ export function AILegalAssistantChat({
   const [conversationId, setConversationId] = useState<string | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
 
+  // Use new API hooks when conversationId exists, fallback to legacy for backward compatibility
+  const createConversationMutation = useCreateConversation()
+  const sendMessageMutation = useSendMessage()
+  const { data: conversationData, isLoading: conversationLoading } = useConversation(
+    conversationId ?? ''
+  )
+  
+  // Legacy hooks for backward compatibility
   const sendMutation = useSendChatMessage()
   const { data: historyData, isLoading: historyLoading } = useChatHistory(conversationId ?? '')
-
-  const messages = historyData?.data?.messages ?? []
+  
+  // Prefer new API data if available, fallback to legacy
+  // Handle both response structures: ChatHistory with id or conversationId
+  const messages =
+    conversationData?.data?.messages ?? historyData?.data?.messages ?? []
+  const isLoadingMessages = conversationLoading || historyLoading
+  
+  // Update conversationId from response if available (only once)
+  useEffect(() => {
+    if (!conversationId) {
+      if (conversationData?.data?.id) {
+        setConversationId(conversationData.data.id)
+      } else if (historyData?.data?.conversationId) {
+        setConversationId(historyData.data.conversationId)
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conversationData?.data?.id, historyData?.data?.conversationId])
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
   }, [messages.length])
 
-  const handleSend = () => {
+  const handleSend = async () => {
     const text = input.trim()
-    if (!text || sendMutation.isPending) return
+    if (!text || (sendMutation.isPending && sendMessageMutation.isPending)) return
 
     setInput('')
-    sendMutation.mutate(
-      {
-        message: text,
-        context,
-        conversationId: conversationId ?? undefined,
-      },
-      {
-        onSuccess: (res) => {
-          if (res?.data?.conversationId && !conversationId) {
-            setConversationId(res.data.conversationId)
-          }
+
+    // If we have a conversationId, use the new API structure
+    if (conversationId) {
+      sendMessageMutation.mutate(
+        {
+          conversationId,
+          data: { content: text },
         },
+        {
+          onSuccess: () => {
+            // Conversation will be refetched automatically via query invalidation
+          },
+        }
+      )
+      return
+    }
+
+    // Otherwise, create a new conversation first, then send the message
+    try {
+      const conversation = await createConversationMutation.mutateAsync({
+        title: text.length > 50 ? `${text.substring(0, 50)}...` : text,
+        context: context ? { topic: context } : undefined,
+      })
+
+      if (conversation.data.id) {
+        setConversationId(conversation.data.id)
+        // Send the first message
+        sendMessageMutation.mutate({
+          conversationId: conversation.data.id,
+          data: { content: text },
+        })
       }
-    )
+    } catch (error) {
+      // Fallback to legacy method if new API fails
+      sendMutation.mutate(
+        {
+          message: text,
+          context,
+          conversationId: conversationId ?? undefined,
+        },
+        {
+          onSuccess: (res) => {
+            if (res?.data?.conversationId && !conversationId) {
+              setConversationId(res.data.conversationId)
+            }
+          },
+        }
+      )
+    }
   }
 
   const handleSuggestedAction = (label: string) => {
     setInput((prev) => (prev ? `${prev} ${label}` : label))
   }
 
-  const showWelcome = !conversationId && messages.length === 0 && !sendMutation.isPending
+  const showWelcome =
+    !conversationId &&
+    messages.length === 0 &&
+    !sendMutation.isPending &&
+    !sendMessageMutation.isPending &&
+    !createConversationMutation.isPending
 
   const messageList = (
     <div className="flex flex-col gap-4">
@@ -99,7 +169,7 @@ export function AILegalAssistantChat({
           </div>
         </div>
       )}
-      {historyLoading && conversationId && (
+      {isLoadingMessages && conversationId && (
         <div className="flex gap-2">
           <Sparkles className="w-4 h-4 text-brand-accent-dark shrink-0 mt-0.5" />
           <p className="text-sm text-brand-muted-text-dark">Loading conversation...</p>
@@ -128,7 +198,7 @@ export function AILegalAssistantChat({
           </div>
         )
       )}
-      {sendMutation.isPending && (
+      {(sendMutation.isPending || sendMessageMutation.isPending || createConversationMutation.isPending) && (
         <div className="flex gap-2">
           <div className="flex items-start gap-2 max-w-[85%]">
             <Sparkles className="w-4 h-4 text-brand-accent-dark shrink-0 mt-0.5 animate-pulse" />
@@ -276,7 +346,12 @@ export function AILegalAssistantChat({
             className="shrink-0"
             aria-label="Send"
             onClick={handleSend}
-            disabled={!input.trim() || sendMutation.isPending}
+            disabled={
+              !input.trim() ||
+              sendMutation.isPending ||
+              sendMessageMutation.isPending ||
+              createConversationMutation.isPending
+            }
           >
             <Send className="w-5 h-5 text-white" />
           </Button>

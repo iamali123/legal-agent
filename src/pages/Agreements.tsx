@@ -3,6 +3,7 @@ import { Eye, Pencil, Plus, Sparkles, Calendar, Users, CircleCheckBig } from 'lu
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { CreateAgreementDialog } from '@/components/CreateAgreementDialog'
+import type { CreateAgreementFormData } from '@/components/CreateAgreementDialog'
 import { ViewAgreementDialog, type ViewAgreementDialogData } from '@/components/ViewAgreementDialog'
 import { cn, formatDate } from '@/lib/utils'
 import { PageHeader } from '@/components/layout/PageHeader'
@@ -11,49 +12,45 @@ import {
   useAgreements,
   useCreateAgreement,
   useGenerateAgreementDraft,
+  useIsAdmin,
 } from '@/hooks/api'
-import type { Agreement } from '@/types/agreement.types'
+import type { Agreement, AgreementStatus } from '@/types/agreement.types'
+
+const AGREEMENT_STATUS_LABELS: Record<AgreementStatus, string> = {
+  draft: 'Draft',
+  active: 'Active',
+  terminated: 'Terminated',
+}
 
 function deriveAgreementStats(items: Agreement[]) {
   return {
+    draft: items.filter((i) => i.status === 'draft').length,
     active: items.filter((i) => i.status === 'active').length,
-    pendingSignature: items.filter((i) => i.status === 'pending').length,
-    inNegotiation: items.filter((i) => i.status === 'inNegotiation').length,
-    renewedThisMonth: 0, // API may not provide; could derive from date if needed
+    terminated: items.filter((i) => i.status === 'terminated').length,
   }
 }
 
 const summaryCardConfig = [
-  { key: 'active' as const, label: 'Active Agreements', color: 'text-blue-400' },
-  { key: 'pendingSignature' as const, label: 'Pending Signature', color: 'text-green-400' },
-  { key: 'inNegotiation' as const, label: 'In Negotiation', color: 'text-orange-400' },
-  { key: 'renewedThisMonth' as const, label: 'Renewed This Month', color: 'text-purple-400' },
+  { key: 'draft' as const, label: 'Draft', color: 'text-gray-400' },
+  { key: 'active' as const, label: 'Active', color: 'text-green-400' },
+  { key: 'terminated' as const, label: 'Terminated', color: 'text-red-400' },
 ]
 
 function agreementToViewData(a: Agreement): ViewAgreementDialogData {
-  const statusLabel =
-    a.status === 'active'
-      ? 'Active'
-      : a.status === 'pending'
-      ? 'Pending Signature'
-      : a.status === 'inNegotiation'
-      ? 'In Negotiation'
-      : a.status === 'signed'
-      ? 'Signed'
-      : 'Expired'
   return {
     id: a.id,
     title: a.title,
     parties: a.parties,
     type: a.type,
     date: a.date,
-    status: statusLabel,
+    status: AGREEMENT_STATUS_LABELS[a.status],
   }
 }
 
 export function Agreements() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [viewAgreement, setViewAgreement] = useState<Agreement | null>(null)
+  const isAdmin = useIsAdmin()
 
   const { data: listData, isLoading, error } = useAgreements()
   const createMutation = useCreateAgreement()
@@ -62,18 +59,16 @@ export function Agreements() {
   const items = listData?.data?.items ?? []
   const stats = deriveAgreementStats(items)
 
-  const handleGenerateDraft = (data: {
-    title: string
-    agreementType: string
-    partiesInvolved: string
-    purposeAndObjectives: string
-  }) => {
+  const handleGenerateDraft = (data: CreateAgreementFormData) => {
     createMutation.mutate(
       {
         title: data.title,
-        agreementType: data.agreementType as Agreement['type'],
-        partiesInvolved: data.partiesInvolved,
+        parties: data.parties,
+        type: data.type,
         purposeAndObjectives: data.purposeAndObjectives,
+        status: data.status,
+        content: data.content,
+        date: data.date,
       },
       {
         onSuccess: (res) => {
@@ -83,9 +78,12 @@ export function Agreements() {
               id,
               data: {
                 title: data.title,
-                agreementType: data.agreementType as Agreement['type'],
-                partiesInvolved: data.partiesInvolved,
+                parties: data.parties,
+                type: data.type,
                 purposeAndObjectives: data.purposeAndObjectives,
+                status: data.status,
+                content: data.content,
+                date: data.date,
               },
             })
           }
@@ -129,13 +127,15 @@ export function Agreements() {
             <h2 className="text-xl font-semibold text-brand-accent-dark">
               All Agreements
             </h2>
-            <Button
-              className="bg-brand-accent-dark hover:bg-brand-accent-dark/90"
-              onClick={() => setCreateDialogOpen(true)}
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Create Agreement
-            </Button>
+            {isAdmin && (
+              <Button
+                className="bg-brand-accent-dark hover:bg-brand-accent-dark/90"
+                onClick={() => setCreateDialogOpen(true)}
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Create Agreement
+              </Button>
+            )}
           </div>
 
           <CreateAgreementDialog
@@ -207,23 +207,13 @@ export function Agreements() {
                           'rounded-full px-2.5 py-1 text-xs font-medium border',
                           agreement.status === 'active' &&
                             'bg-emerald-500/20 border-emerald-500/80 text-emerald-400',
-                          agreement.status === 'pending' &&
-                            'bg-blue-500/20 border-blue-500/80 text-blue-400',
-                          agreement.status === 'inNegotiation' &&
-                            'bg-orange-500/20 border-orange-500/80 text-orange-400',
-                          (agreement.status === 'signed' || agreement.status === 'expired') &&
-                            'bg-gray-500/20 border-gray-500/80 text-gray-400'
+                          agreement.status === 'draft' &&
+                            'bg-gray-500/20 border-gray-500/80 text-gray-400',
+                          agreement.status === 'terminated' &&
+                            'bg-red-500/20 border-red-500/80 text-red-400'
                         )}
                       >
-                        {agreement.status === 'active'
-                          ? 'Active'
-                          : agreement.status === 'pending'
-                          ? 'Pending Signature'
-                          : agreement.status === 'inNegotiation'
-                          ? 'In Negotiation'
-                          : agreement.status === 'signed'
-                          ? 'Signed'
-                          : 'Expired'}
+                        {AGREEMENT_STATUS_LABELS[agreement.status]}
                       </span>
                       <div className="flex items-center gap-3">
                         <button
@@ -234,20 +224,24 @@ export function Agreements() {
                         >
                           <Eye className="w-5 h-5" />
                         </button>
-                        <button
-                          type="button"
-                          className="text-brand-muted-text-dark hover:text-brand-accent-dark/80 transition-colors"
-                          aria-label="Edit"
-                        >
-                          <Pencil className="w-5 h-5" />
-                        </button>
-                        <button
-                          type="button"
-                          className="text-brand-accent-dark hover:text-brand-accent-dark/80 transition-colors"
-                          aria-label="AI suggestions"
-                        >
-                          <Sparkles className="w-5 h-5" />
-                        </button>
+                        {isAdmin && (
+                          <>
+                            <button
+                              type="button"
+                              className="text-brand-muted-text-dark hover:text-brand-accent-dark/80 transition-colors"
+                              aria-label="Edit"
+                            >
+                              <Pencil className="w-5 h-5" />
+                            </button>
+                            <button
+                              type="button"
+                              className="text-brand-accent-dark hover:text-brand-accent-dark/80 transition-colors"
+                              aria-label="AI suggestions"
+                            >
+                              <Sparkles className="w-5 h-5" />
+                            </button>
+                          </>
+                        )}
                       </div>
                     </div>
                   </CardContent>

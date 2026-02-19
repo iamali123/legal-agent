@@ -11,6 +11,10 @@ export const API_CONFIG = {
   },
 } as const
 
+/** UAE Pass: authorization URL to redirect users for sign-in. Callback returns to /auth/callback?uaePassId=... */
+export const UAE_PASS_AUTH_URL =
+  import.meta.env.VITE_UAE_PASS_AUTH_URL || ''
+
 export const getApiBaseURL = () => API_CONFIG.baseURL
 
 export const setApiBaseURL = (url: string) => {

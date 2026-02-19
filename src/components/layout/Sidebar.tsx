@@ -7,13 +7,15 @@ import {
   FileSignature,
   CheckSquare2,
   Sparkles,
-  User as UserIcon
+  User as UserIcon,
+  ShieldCheck,
+  LogOut
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import logoImage from '@/assets/mbrhe-logo.png'
-import { useCurrentUser } from '@/hooks/api'
+import { useCurrentUser, useIsAdmin, useLogout } from '@/hooks/api'
 
-const navigationItems = [
+const baseNavigationItems = [
   { path: '/', label: 'Dashboard', icon: LayoutDashboard },
   { path: '/legislations', label: 'Legislations', icon: FileText },
   { path: '/laws-policy', label: 'Laws / Policy', icon: Scale },
@@ -104,10 +106,17 @@ function UserProfile() {
 }
 
 export function Sidebar() {
+  const isAdmin = useIsAdmin()
+  const logoutMutation = useLogout()
+  const navigationItems = [
+    ...baseNavigationItems,
+    ...(isAdmin ? [{ path: '/admin', label: 'Admin', icon: ShieldCheck }] : []),
+  ]
+
   return (
-    <div className="w-64  border-r border-border h-screen flex flex-col">
+    <div className="w-64 border-r border-border h-screen flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="p-6 border-b border-border">
+      <div className="p-6 border-b border-border shrink-0">
         <div className="flex items-start gap-3 mb-5">
           <img 
             src={logoImage} 
@@ -121,8 +130,8 @@ export function Sidebar() {
         <hr className="border-0 h-px bg-hr-glow -ml-5" />
       </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 p-4 space-y-2">
+      {/* Navigation - scrollable so logout stays visible */}
+      <nav className="sidebar-nav-scroll flex-1 min-h-0 overflow-y-auto p-4 space-y-2">
         {navigationItems.map((item) => {
           const Icon = item.icon
           return (
@@ -154,9 +163,21 @@ export function Sidebar() {
         })}
       </nav>
 
-      {/* User Profile */}
-      <div className="p-4 border-t border-border space-y-3">
+      {/* User Profile + Logout - always visible at bottom */}
+      <div className="p-4 border-t border-border space-y-1 shrink-0">
         <UserProfile />
+        <button
+          type="button"
+          onClick={() => logoutMutation.mutate()}
+          disabled={logoutMutation.isPending}
+          className={cn(
+            'flex items-center gap-3 w-full px-2 py-2 rounded-xl text-red-500 hover:bg-white/5 hover:text-white transition-colors disabled:opacity-50'
+          )}
+          aria-label="Log out"
+        >
+          <LogOut className="w-5 h-5" />
+          <span className="font-medium">{logoutMutation.isPending ? 'Logging out...' : 'Log out'}</span>
+        </button>
       </div>
     </div>
   )

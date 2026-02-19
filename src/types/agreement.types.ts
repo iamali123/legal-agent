@@ -1,8 +1,9 @@
 /**
  * Agreement Types
+ * Status aligns with backend ENUM: draft, active, terminated
  */
 
-export type AgreementStatus = 'active' | 'pending' | 'inNegotiation' | 'signed' | 'expired'
+export type AgreementStatus = 'draft' | 'active' | 'terminated'
 export type AgreementType =
   | 'Memorandum of Understanding'
   | 'NDA'
@@ -14,34 +15,43 @@ export type AgreementType =
 export interface Agreement {
   id: string
   title: string
-  parties: string
+  parties: string // Formatted from array for display
   type: AgreementType
   date: string
   status: AgreementStatus
-  aiSuggestions: number | null
+  aiSuggestions?: number | null
   createdAt: string
   lastUpdated: string
+  createdBy?: string
+  creator?: {
+    name: string
+  }
+  updatedAt?: string
+  deletedAt?: string | null
 }
 
 export interface AgreementDetail extends Agreement {
   purposeAndObjectives: string
   content: string
-  aiAnalysis: {
+  aiAnalysis?: {
     suggestions: string[]
     complianceScore: number
   }
-  createdBy: {
-    id: string
+  createdBy: string
+  creator?: {
     name: string
   }
-  attachments: File[]
+  attachments?: File[]
 }
 
 export interface CreateAgreementRequest {
   title: string
-  agreementType: AgreementType
-  partiesInvolved: string
+  parties: string[] // Array of party names
+  type: AgreementType
   purposeAndObjectives: string
+  status: AgreementStatus
+  content?: string
+  date: string // Format: YYYY-MM-DD
 }
 
 export interface UpdateAgreementRequest {
@@ -52,10 +62,9 @@ export interface UpdateAgreementRequest {
 }
 
 export interface AgreementStats {
+  draft: number
   active: number
-  pendingSignature: number
-  inNegotiation: number
-  renewedThisMonth: number
+  terminated: number
 }
 
 export interface AgreementListParams {

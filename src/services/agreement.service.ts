@@ -15,6 +15,7 @@ import type {
   UpdateAgreementRequest,
   AgreementStats,
   AgreementListParams,
+  AgreementType,
 } from '@/types/agreement.types'
 
 /**
@@ -66,7 +67,10 @@ export const getAgreements = async (
       status: string
       updatedAt?: string
       createdAt: string
+      createdBy?: string
+      creator?: { name: string }
       aiSuggestions?: number | null
+      deletedAt?: string | null
     }) => ({
       id: item.id,
       title: item.title,
@@ -77,6 +81,10 @@ export const getAgreements = async (
       aiSuggestions: item.aiSuggestions ?? null,
       createdAt: item.createdAt,
       lastUpdated: item.updatedAt || item.createdAt,
+      createdBy: item.createdBy,
+      creator: item.creator,
+      updatedAt: item.updatedAt,
+      deletedAt: item.deletedAt,
     }))
     
     return {
@@ -104,7 +112,10 @@ export const getAgreements = async (
       status: string
       updatedAt?: string
       createdAt: string
+      createdBy?: string
+      creator?: { name: string }
       aiSuggestions?: number | null
+      deletedAt?: string | null
     }) => ({
       id: item.id,
       title: item.title,
@@ -115,6 +126,10 @@ export const getAgreements = async (
       aiSuggestions: item.aiSuggestions ?? null,
       createdAt: item.createdAt,
       lastUpdated: item.updatedAt || item.createdAt,
+      createdBy: item.createdBy,
+      creator: item.creator,
+      updatedAt: item.updatedAt,
+      deletedAt: item.deletedAt,
     }))
     
     return {
@@ -155,14 +170,33 @@ export const getAgreement = async (
 }
 
 /**
+ * Map AgreementType to API format
+ */
+function mapAgreementTypeToApi(type: Agreement['type']): string {
+  // API expects the type as-is, but ensure it matches
+  return type
+}
+
+/**
  * Create new agreement draft
  */
 export const createAgreement = async (
   data: CreateAgreementRequest
 ): Promise<ApiSuccessResponse<Agreement>> => {
+  // Transform the request to match API structure
+  const apiData = {
+    title: data.title,
+    parties: data.parties, // Already an array
+    type: mapAgreementTypeToApi(data.type),
+    purposeAndObjectives: data.purposeAndObjectives,
+    status: data.status,
+    content: data.content,
+    date: data.date,
+  }
+  
   const response = await apiClient.post<ApiSuccessResponse<Agreement>>(
     '/agreements',
-    data
+    apiData
   )
   return response.data
 }

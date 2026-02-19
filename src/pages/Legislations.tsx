@@ -11,8 +11,18 @@ import {
   useLegislations,
   useCreateLegislation,
   useGenerateLegislationDraft,
+  useUpdateLegislationStatus,
+  useIsAdmin,
 } from '@/hooks/api'
-import type { LegislationJurisdiction } from '@/types/legislation.types'
+import type { LegislationJurisdiction, LegislationStatus } from '@/types/legislation.types'
+
+/** Status options for PATCH /legislations/:id/status (backend enum Legislations.status) */
+const LEGISLATION_STATUS_OPTIONS: { value: LegislationStatus; label: string }[] = [
+  { value: 'draft', label: 'Draft' },
+  { value: 'active', label: 'Active' },
+  { value: 'published', label: 'Published' },
+  { value: 'amended', label: 'Amended' },
+]
 
 function deriveLegislationStats(items: { status: string; aiFlags: { type: string } }[]) {
   return {
@@ -35,20 +45,32 @@ const summaryCardConfig = [
 export function Legislations() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [viewLegislationId, setViewLegislationId] = useState<string | null>(null)
+  const isAdmin = useIsAdmin()
 
   const { data: listData, isLoading, error } = useLegislations()
   const createMutation = useCreateLegislation()
   const generateDraftMutation = useGenerateLegislationDraft()
+  const updateStatusMutation = useUpdateLegislationStatus()
 
   const items = listData?.data?.items ?? []
   const stats = deriveLegislationStats(items)
 
-  const handleSaveDraft = (form: { title: string; jurisdiction: string; description: string }) => {
+  const handleSaveDraft = (form: { 
+    title: string
+    jurisdiction: string
+    description: string
+    status: LegislationStatus
+    content?: string
+    version: string
+  }) => {
     createMutation.mutate(
       {
         title: form.title,
         jurisdiction: form.jurisdiction as LegislationJurisdiction,
         description: form.description,
+        status: form.status,
+        content: form.content,
+        version: form.version,
       },
       {
         onSuccess: () => setCreateDialogOpen(false),
@@ -56,12 +78,22 @@ export function Legislations() {
     )
   }
 
-  const handleGenerateDraft = (form: { title: string; jurisdiction: string; description: string }) => {
+  const handleGenerateDraft = (form: { 
+    title: string
+    jurisdiction: string
+    description: string
+    status: LegislationStatus
+    content?: string
+    version: string
+  }) => {
     createMutation.mutate(
       {
         title: form.title,
         jurisdiction: form.jurisdiction as LegislationJurisdiction,
         description: form.description,
+        status: form.status,
+        content: form.content,
+        version: form.version,
       },
       {
         onSuccess: (res) => {
@@ -73,6 +105,9 @@ export function Legislations() {
                 title: form.title,
                 jurisdiction: form.jurisdiction as LegislationJurisdiction,
                 description: form.description,
+                status: form.status,
+                content: form.content,
+                version: form.version,
               },
             })
           }
@@ -116,10 +151,12 @@ export function Legislations() {
             <h2 className="text-xl font-semibold text-brand-accent-dark">
               All Legislations
             </h2>
-            <Button onClick={() => setCreateDialogOpen(true)}>
-              <Plus className="w-4 h-4 mr-2" />
-              Create Legislation
-            </Button>
+            {isAdmin && (
+              <Button onClick={() => setCreateDialogOpen(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                Create Legislation
+              </Button>
+            )}
           </div>
 
           <CreateLegislationDialog
@@ -194,18 +231,41 @@ export function Legislations() {
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <Badge
-                            variant={
-                              legislation.status === 'draft'
-                                ? 'draft'
-                                : legislation.status === 'active'
-                                ? 'active'
-                                : 'clean'
-                            }
-                          >
-                            {(legislation.status as string).charAt(0).toUpperCase() +
-                              (legislation.status as string).slice(1)}
-                          </Badge>
+                          {isAdmin ? (
+                            <select
+                              value={legislation.status}
+                              onChange={(e) => {
+                                const status = e.target.value
+                                if (status && status !== legislation.status) {
+                                  updateStatusMutation.mutate({
+                                    id: legislation.id,
+                                    status,
+                                  })
+                                }
+                              }}
+                              disabled={updateStatusMutation.isPending}
+                              className="rounded-md border border-brand-accent-dark/30 bg-white/5 text-white text-sm px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-brand-accent-dark disabled:opacity-50"
+                            >
+                              {LEGISLATION_STATUS_OPTIONS.map((opt) => (
+                                <option key={opt.value} value={opt.value} className="bg-[#0A1628] text-white">
+                                  {opt.label}
+                                </option>
+                              ))}
+                            </select>
+                          ) : (
+                            <Badge
+                              variant={
+                                legislation.status === 'draft'
+                                  ? 'draft'
+                                  : legislation.status === 'active'
+                                  ? 'active'
+                                  : 'clean'
+                              }
+                            >
+                              {(legislation.status as string).charAt(0).toUpperCase() +
+                                (legislation.status as string).slice(1)}
+                            </Badge>
+                          )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm text-brand-muted-text-dark">
@@ -237,12 +297,16 @@ export function Legislations() {
                             >
                               <Eye className="w-4 h-4" />
                             </button>
-                            <button className="text-brand-muted-text-dark hover:text-brand-accent-dark transition-colors">
-                              <Pencil className="w-4 h-4" />
-                            </button>
-                            <button className="text-brand-muted-text-dark hover:text-brand-accent-dark transition-colors">
-                              <Sparkles className="w-5 h-5 text-brand-accent-dark" />
-                            </button>
+                            {isAdmin && (
+                              <>
+                                <button className="text-brand-muted-text-dark hover:text-brand-accent-dark transition-colors" aria-label="Edit">
+                                  <Pencil className="w-4 h-4" />
+                                </button>
+                                <button className="text-brand-muted-text-dark hover:text-brand-accent-dark transition-colors" aria-label="AI draft">
+                                  <Sparkles className="w-5 h-5 text-brand-accent-dark" />
+                                </button>
+                              </>
+                            )}
                           </div>
                         </td>
                       </tr>

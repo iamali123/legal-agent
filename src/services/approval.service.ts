@@ -82,20 +82,18 @@ export const getApprovals = async (params?: ApprovalListParams): Promise<ApiSucc
       type: mapEntityTypeToApprovalType(item.entityType),
       entityId: item.entityId,
       entityType: item.entityType,
-      assignee: {
-        id: item.assigneeId,
-        name: item.assignee?.name ?? '—',
-      },
-      submittedBy: {
-        id: item.submittedById,
-        name: item.submitter?.name ?? '—',
-      },
+      assigneeId: item.assigneeId,
+      submittedById: item.submittedById,
+      assignee: item.assignee ? { name: item.assignee.name } : undefined,
+      submitter: item.submitter ? { name: item.submitter.name } : undefined,
       dueDate: item.dueDate,
       priority: item.priority as Approval['priority'],
       status: item.status as Approval['status'],
       aiRecommendation: item.aiRecommendation,
       confidence: convertConfidenceToPercentage(item.confidence),
       createdAt: item.createdAt,
+      updatedAt: item.updatedAt,
+      deletedAt: (item as { deletedAt?: string | null }).deletedAt ?? null,
       approvedAt: item.approvedAt ?? null,
     }))
     
@@ -142,20 +140,18 @@ export const getApprovals = async (params?: ApprovalListParams): Promise<ApiSucc
         : mapEntityTypeToApprovalType(item.entityType || 'legislation'),
       entityId: item.entityId,
       entityType: item.entityType || 'legislation',
-      assignee: {
-        id: item.assigneeId || item.assignee?.id || '',
-        name: item.assignee?.name ?? '—',
-      },
-      submittedBy: {
-        id: item.submittedById || item.submittedBy?.id || '',
-        name: item.submitter?.name ?? item.submittedBy?.name ?? '—',
-      },
+      assigneeId: item.assigneeId,
+      submittedById: item.submittedById,
+      assignee: item.assignee ? { name: item.assignee.name } : undefined,
+      submitter: item.submitter ? { name: item.submitter.name } : undefined,
       dueDate: item.dueDate,
       priority: item.priority as Approval['priority'],
       status: item.status as Approval['status'],
       aiRecommendation: item.aiRecommendation,
       confidence: convertConfidenceToPercentage(item.confidence),
       createdAt: item.createdAt,
+      updatedAt: item.updatedAt,
+      deletedAt: (item as { deletedAt?: string | null }).deletedAt ?? null,
       approvedAt: item.approvedAt ?? null,
     }))
     
@@ -209,15 +205,15 @@ export const getApproval = async (
 /**
  * Update approval status (used for approve, reject, and request changes)
  * Backend uses a single PATCH endpoint for all status updates
+ * PATCH /approvals/:id/status with body { status }
  */
 export const updateApprovalStatus = async (
   id: string,
-  status: 'approved' | 'rejected' | 'changesRequested' | 'pending',
-  comments?: string
+  status: 'approved' | 'rejected' | 'changesRequested' | 'pending'
 ): Promise<ApiSuccessResponse<Approval>> => {
   const response = await apiClient.patch<ApiSuccessResponse<Approval>>(
     `/approvals/${id}/status`,
-    { status, comments }
+    { status }
   )
   return response.data
 }
@@ -228,9 +224,9 @@ export const updateApprovalStatus = async (
  */
 export const approveRequest = async (
   id: string,
-  data?: ApproveRequest
+  _data?: ApproveRequest // Data parameter kept for compatibility but not used
 ): Promise<ApiSuccessResponse<Approval>> => {
-  return updateApprovalStatus(id, 'approved', data?.comments)
+  return updateApprovalStatus(id, 'approved')
 }
 
 /**
@@ -239,9 +235,9 @@ export const approveRequest = async (
  */
 export const rejectRequest = async (
   id: string,
-  data: RejectRequest
+  _data: RejectRequest // Data parameter kept for compatibility but not used
 ): Promise<ApiSuccessResponse<Approval>> => {
-  return updateApprovalStatus(id, 'rejected', data.reason || data.comments)
+  return updateApprovalStatus(id, 'rejected')
 }
 
 /**
@@ -250,7 +246,7 @@ export const rejectRequest = async (
  */
 export const requestChanges = async (
   id: string,
-  data: RequestChangesRequest
+  _data: RequestChangesRequest // Data parameter kept for compatibility but not used
 ): Promise<ApiSuccessResponse<Approval>> => {
-  return updateApprovalStatus(id, 'changesRequested', data.comments)
+  return updateApprovalStatus(id, 'changesRequested')
 }

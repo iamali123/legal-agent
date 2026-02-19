@@ -39,7 +39,8 @@ export function ViewContractDialog({
         </div>
 
         {/* Information grid: 2x2 dark cards - Counterparty, Type, Value, Status */}
-        <div className="px-6 pb-4 grid grid-cols-2 gap-3">
+        <div className="px-6 pb-4 flex-1 min-h-0 overflow-y-auto sidebar-nav-scroll">
+          <div className="grid grid-cols-2 gap-3">
           <div className="rounded-xl bg-[#0A162880] border border-brand-accent-dark/20 px-4 py-3">
             <p className="text-xs text-brand-accent-dark uppercase tracking-wide mb-1">
               Counterparty
@@ -63,6 +64,7 @@ export function ViewContractDialog({
               Status
             </p>
             <p className="text-sm font-medium text-white">{data.status}</p>
+          </div>
           </div>
         </div>
 

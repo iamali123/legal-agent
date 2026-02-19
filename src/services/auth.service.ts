@@ -16,9 +16,12 @@ import { setAccessToken, setRefreshToken } from '@/lib/api/client'
 
 /**
  * Login with email and password
+ * @param credentials - Login credentials
+ * @param rememberMe - If true, store tokens in cookies; if false, store in localStorage
  */
 export const login = async (
-  credentials: LoginRequest
+  credentials: LoginRequest,
+  rememberMe: boolean = false
 ): Promise<ApiSuccessResponse<AuthResponse>> => {
   const response = await apiClient.post<ApiSuccessResponse<AuthResponse>>(
     '/auth/login',
@@ -27,8 +30,8 @@ export const login = async (
   
   // Store tokens
   if (response.data.success && response.data.data) {
-    setAccessToken(response.data.data.accessToken)
-    setRefreshToken(response.data.data.refreshToken)
+    setAccessToken(response.data.data.accessToken, rememberMe)
+    setRefreshToken(response.data.data.refreshToken, rememberMe)
   }
   
   return response.data
@@ -36,9 +39,12 @@ export const login = async (
 
 /**
  * Login with UAE Pass
+ * @param credentials - UAE Pass credentials
+ * @param rememberMe - If true, store tokens in cookies; if false, store in localStorage
  */
 export const uaePassLogin = async (
-  credentials: UAEPassLoginRequest
+  credentials: UAEPassLoginRequest,
+  rememberMe: boolean = false
 ): Promise<ApiSuccessResponse<AuthResponse>> => {
   const response = await apiClient.post<ApiSuccessResponse<AuthResponse>>(
     '/auth/uae-pass',
@@ -47,8 +53,8 @@ export const uaePassLogin = async (
   
   // Store tokens
   if (response.data.success && response.data.data) {
-    setAccessToken(response.data.data.accessToken)
-    setRefreshToken(response.data.data.refreshToken)
+    setAccessToken(response.data.data.accessToken, rememberMe)
+    setRefreshToken(response.data.data.refreshToken, rememberMe)
   }
   
   return response.data
@@ -56,9 +62,12 @@ export const uaePassLogin = async (
 
 /**
  * Refresh access token
+ * @param request - Refresh token request
+ * @param rememberMe - If true, store tokens in cookies; if false, store in localStorage
  */
 export const refreshToken = async (
-  request: RefreshTokenRequest
+  request: RefreshTokenRequest,
+  rememberMe: boolean = false
 ): Promise<ApiSuccessResponse<{ accessToken: string; expiresIn: number }>> => {
   const response = await apiClient.post<
     ApiSuccessResponse<{ accessToken: string; expiresIn: number }>
@@ -66,7 +75,7 @@ export const refreshToken = async (
   
   // Update access token
   if (response.data.success && response.data.data) {
-    setAccessToken(response.data.data.accessToken)
+    setAccessToken(response.data.data.accessToken, rememberMe)
   }
   
   return response.data

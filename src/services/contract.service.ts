@@ -30,16 +30,26 @@ function formatContractValue(valueNumeric: string | number, currency: string): s
 
 /**
  * Map API contract type to ContractType
+ * Backend returns "Service" but we display/store as "Service Agreement"
  */
-function mapContractType(apiType: string): Contract['type'] {
+function mapContractType(apiType: string | null): Contract['type'] {
+  if (!apiType) return 'Other'
   const typeMap: Record<string, Contract['type']> = {
     Service: 'Service Agreement',
+    'Service Agreement': 'Service Agreement',
     Lease: 'Lease',
     License: 'License',
     NDA: 'NDA',
-    'Service Agreement': 'Service Agreement',
   }
   return typeMap[apiType] || 'Other'
+}
+
+/**
+ * Map ContractType to API type (reverse mapping)
+ * Backend expects "Service Agreement" but may return "Service"
+ */
+function mapContractTypeToApi(type: Contract['type']): string {
+  return type === 'Service Agreement' ? 'Service Agreement' : type
 }
 
 /**
@@ -62,11 +72,11 @@ export const getContracts = async (
       id: string
       title: string
       counterparty: string
-      type: string
-      valueNumeric: string | number
+      type: string | null
+      valueNumeric: string | number | null
       currency: string
-      startDate: string
-      endDate: string
+      startDate: string | null
+      endDate: string | null
       durationMonths?: number | null
       status: string
       updatedAt?: string
@@ -77,11 +87,15 @@ export const getContracts = async (
       title: item.title,
       counterparty: item.counterparty,
       type: mapContractType(item.type),
-      value: formatContractValue(item.valueNumeric, item.currency),
-      valueNumeric: typeof item.valueNumeric === 'string' ? parseFloat(item.valueNumeric) : item.valueNumeric,
-      currency: item.currency,
-      startDate: item.startDate,
-      endDate: item.endDate,
+      value: item.valueNumeric && item.currency
+        ? formatContractValue(item.valueNumeric, item.currency)
+        : '—',
+      valueNumeric: item.valueNumeric
+        ? (typeof item.valueNumeric === 'string' ? parseFloat(item.valueNumeric) : item.valueNumeric)
+        : 0,
+      currency: item.currency || '',
+      startDate: item.startDate || '',
+      endDate: item.endDate || '',
       durationMonths: item.durationMonths ?? null,
       status: item.status as Contract['status'],
       aiFlags: item.aiFlags ?? null,
@@ -109,12 +123,12 @@ export const getContracts = async (
       id: string
       title: string
       counterparty: string
-      type: string
-      valueNumeric?: string | number
+      type: string | null
+      valueNumeric?: string | number | null
       currency?: string
       value?: string
-      startDate: string
-      endDate: string
+      startDate: string | null
+      endDate: string | null
       durationMonths?: number | null
       status: string
       updatedAt?: string
@@ -132,8 +146,8 @@ export const getContracts = async (
         ? (typeof item.valueNumeric === 'string' ? parseFloat(item.valueNumeric) : item.valueNumeric)
         : 0,
       currency: item.currency || '',
-      startDate: item.startDate,
-      endDate: item.endDate,
+      startDate: item.startDate || '',
+      endDate: item.endDate || '',
       durationMonths: item.durationMonths ?? null,
       status: item.status as Contract['status'],
       aiFlags: item.aiFlags ?? null,
@@ -180,13 +194,42 @@ export const getContract = async (
 
 /**
  * Create new contract draft
+ * POST /contracts - transforms frontend form data to backend API format
  */
 export const createContract = async (
   data: CreateContractRequest
 ): Promise<ApiSuccessResponse<Contract>> => {
+  // Transform keyTerms: if string, parse to object or wrap; if object, use as-is
+  let keyTermsObj: Record<string, unknown>
+  if (typeof data.keyTerms === 'string') {
+    try {
+      // Try parsing as JSON first
+      keyTermsObj = JSON.parse(data.keyTerms)
+    } catch {
+      // If not JSON, wrap in a simple object
+      keyTermsObj = { description: data.keyTerms }
+    }
+  } else {
+    keyTermsObj = data.keyTerms
+  }
+
+  const requestBody = {
+    title: data.title,
+    counterparty: data.counterparty,
+    type: mapContractTypeToApi(data.type),
+    valueNumeric: data.valueNumeric,
+    currency: data.currency,
+    startDate: data.startDate,
+    endDate: data.endDate,
+    durationMonths: data.durationMonths,
+    status: data.status,
+    keyTerms: keyTermsObj,
+    ...(data.content && { content: data.content }),
+  }
+
   const response = await apiClient.post<ApiSuccessResponse<Contract>>(
     '/contracts',
-    data
+    requestBody
   )
   return response.data
 }

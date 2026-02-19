@@ -19,6 +19,9 @@ import type {
   ChatMessageRequest,
   ChatResponse,
   ChatHistory,
+  Conversation,
+  CreateConversationRequest,
+  SendMessageRequest,
   AnalyzeDocumentRequest,
   AIJobResponse,
   AnalysisResult,
@@ -27,30 +30,33 @@ import type {
 
 /**
  * Create a new conversation
+ * POST /ai/chat/conversations
+ * Body: { title?: string, context?: Record<string, unknown> }
  */
 export const createConversation = async (
-  data: { title?: string; context?: Record<string, any> }
-): Promise<ApiSuccessResponse<{ id: string; title: string; createdAt: string }>> => {
-  const response = await apiClient.post<
-    ApiSuccessResponse<{ id: string; title: string; createdAt: string }>
-  >('/ai/chat/conversations', data)
+  data: CreateConversationRequest
+): Promise<ApiSuccessResponse<Conversation>> => {
+  const response = await apiClient.post<ApiSuccessResponse<Conversation>>(
+    '/ai/chat/conversations',
+    data
+  )
   return response.data
 }
 
 /**
  * Get all conversations for the current user
+ * GET /ai/chat/conversations
  */
-export const getConversations = async (): Promise<
-  ApiSuccessResponse<Array<{ id: string; title: string; createdAt: string; updatedAt: string }>>
-> => {
-  const response = await apiClient.get<
-    ApiSuccessResponse<Array<{ id: string; title: string; createdAt: string; updatedAt: string }>>
-  >('/ai/chat/conversations')
+export const getConversations = async (): Promise<ApiSuccessResponse<Conversation[]>> => {
+  const response = await apiClient.get<ApiSuccessResponse<Conversation[]>>(
+    '/ai/chat/conversations'
+  )
   return response.data
 }
 
 /**
  * Get conversation with messages
+ * GET /ai/chat/conversations/:conversationId
  */
 export const getConversation = async (
   conversationId: string
@@ -63,14 +69,16 @@ export const getConversation = async (
 
 /**
  * Send message to a conversation
+ * POST /ai/chat/conversations/:conversationId/messages
+ * Body: { content: string }
  */
 export const sendMessage = async (
   conversationId: string,
-  content: string
+  data: SendMessageRequest
 ): Promise<ApiSuccessResponse<ChatResponse>> => {
   const response = await apiClient.post<ApiSuccessResponse<ChatResponse>>(
     `/ai/chat/conversations/${conversationId}/messages`,
-    { content }
+    data
   )
   return response.data
 }
@@ -108,18 +116,22 @@ export const getAIJob = async (
 /**
  * @deprecated Use createConversation and sendMessage instead
  * Send chat message (legacy method - use createConversation + sendMessage)
+ * Maintained for backward compatibility with existing components
  */
 export const sendChatMessage = async (
   data: ChatMessageRequest
 ): Promise<ApiSuccessResponse<ChatResponse>> => {
   // If conversationId is provided, send message to existing conversation
   if (data.conversationId) {
-    return sendMessage(data.conversationId, data.message)
+    return sendMessage(data.conversationId, { content: data.message })
   }
   
   // Otherwise create a new conversation and send the first message
-  const conversation = await createConversation({ context: data.context })
-  return sendMessage(conversation.data.id, data.message)
+  const conversation = await createConversation({
+    title: data.context ? `Chat - ${data.context}` : 'New Conversation',
+    context: data.context ? { topic: data.context } : undefined,
+  })
+  return sendMessage(conversation.data.id, { content: data.message })
 }
 
 /**

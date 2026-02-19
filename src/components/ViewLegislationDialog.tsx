@@ -1,8 +1,10 @@
-import { FileText, Sparkles, User, Calendar } from 'lucide-react'
+import { useState } from 'react'
+import { FileText, Sparkles, User, Calendar, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { formatDate } from '@/lib/utils'
-import { useLegislation } from '@/hooks/api'
+import { useLegislation, useCreateLegislationSection, useIsAdmin } from '@/hooks/api'
+import { AddLegislationSectionDialog } from '@/components/AddLegislationSectionDialog'
 
 interface ViewLegislationDialogProps {
   open: boolean
@@ -15,7 +17,10 @@ export function ViewLegislationDialog({
   legislationId,
   onClose,
 }: ViewLegislationDialogProps) {
+  const [addSectionOpen, setAddSectionOpen] = useState(false)
   const { data, isLoading, error } = useLegislation(legislationId ?? '')
+  const createSectionMutation = useCreateLegislationSection()
+  const isAdmin = useIsAdmin()
 
   const legislation = data?.data
 
@@ -61,7 +66,7 @@ export function ViewLegislationDialog({
         </div>
 
         {legislation && (
-          <>
+          <div className="flex-1 min-h-0 overflow-y-auto sidebar-nav-scroll">
             {/* Information grid: 2x2 dark cards */}
             <div className="px-6 pb-4 grid grid-cols-2 gap-3">
               <div className="rounded-xl bg-[#0A162880] border border-brand-accent-dark/20 px-4 py-3">
@@ -113,8 +118,7 @@ export function ViewLegislationDialog({
             </div>
 
             {/* Created by / Creator */}
-            {((legislation as { createdBy?: { name: string } }).createdBy ||
-              (legislation as { creator?: { name: string; email?: string } }).creator) && (
+            {(legislation as { creator?: { name: string; email?: string } }).creator && (
               <div className="px-6 pb-4">
                 <div className="rounded-xl bg-[#0A162880] border border-brand-accent-dark/20 px-4 py-3">
                   <p className="text-xs text-brand-accent-dark uppercase tracking-wide mb-1 flex items-center gap-1.5">
@@ -122,9 +126,7 @@ export function ViewLegislationDialog({
                     Created By
                   </p>
                   <p className="text-sm font-medium text-white">
-                    {(legislation as { createdBy?: { name: string } }).createdBy?.name ??
-                      (legislation as { creator?: { name: string } }).creator?.name ??
-                      '—'}
+                    {(legislation as { creator?: { name: string } }).creator?.name ?? '—'}
                   </p>
                 </div>
               </div>
@@ -153,20 +155,111 @@ export function ViewLegislationDialog({
               </div>
             )}
 
+            {/* Sections (when available) - ready for future list */}
+            {Array.isArray(legislation.sections) && legislation.sections.length > 0 && (
+              <div className="px-6 pb-4">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs text-brand-accent-dark uppercase tracking-wide">
+                    Sections
+                  </p>
+                  {isAdmin && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setAddSectionOpen(true)}
+                      className="border-brand-accent-dark/30 text-brand-accent-dark hover:bg-brand-accent-dark/10 hover:text-white"
+                    >
+                      <Plus className="w-4 h-4 mr-1.5" />
+                      Add section
+                    </Button>
+                  )}
+                </div>
+                <div className="rounded-xl bg-[#0A162880] border border-brand-accent-dark/20 divide-y divide-brand-accent-dark/10 max-h-48 overflow-y-auto">
+                  {legislation.sections
+                    .slice()
+                    .sort(
+                      (a: { order?: number }, b: { order?: number }) =>
+                        (a.order ?? 0) - (b.order ?? 0)
+                    )
+                    .map((sec: { id?: string; title?: string; order?: number }) => (
+                      <div
+                        key={(sec as { id: string }).id ?? sec.order}
+                        className="px-4 py-3"
+                      >
+                        <p className="text-sm font-medium text-white">
+                          {sec.title ?? `Section ${sec.order ?? '—'}`}
+                        </p>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            )}
+
+            {/* Add section (Admin) - show when no sections or when sections exist and admin */}
+            {isAdmin && legislationId && (
+              <>
+                {(!Array.isArray(legislation.sections) || legislation.sections.length === 0) && (
+                  <div className="px-6 pb-4">
+                    <p className="text-xs text-brand-accent-dark uppercase tracking-wide mb-2">
+                      Sections
+                    </p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setAddSectionOpen(true)}
+                      className="w-full border-brand-accent-dark/30 text-brand-accent-dark hover:bg-brand-accent-dark/10"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add section
+                    </Button>
+                  </div>
+                )}
+                <AddLegislationSectionDialog
+                  open={addSectionOpen}
+                  legislationId={legislationId}
+                  legislationTitle={legislation.title}
+                  onClose={() => {
+                    setAddSectionOpen(false)
+                    createSectionMutation.reset()
+                  }}
+                  onSubmit={(data) =>
+                    createSectionMutation.mutate(
+                      { legislationId, data },
+                      {
+                        onSuccess: () => {
+                          setAddSectionOpen(false)
+                          createSectionMutation.reset()
+                        },
+                      }
+                    )
+                  }
+                  isPending={createSectionMutation.isPending}
+                  error={
+                    createSectionMutation.isError
+                      ? (createSectionMutation.error as { response?: { data?: { message?: string } }; message?: string })?.response?.data?.message ??
+                        (createSectionMutation.error as Error)?.message ??
+                        'Failed to add section'
+                      : null
+                  }
+                />
+              </>
+            )}
+
             {/* Content (full text) */}
             {'content' in legislation && legislation.content && (
-              <div className="px-6 pb-4 flex-1 min-h-0 overflow-hidden flex flex-col">
+              <div className="px-6 pb-4">
                 <p className="text-xs text-brand-accent-dark uppercase tracking-wide mb-2">
                   Content
                 </p>
-                <div className="rounded-xl bg-[#0A162880] border border-brand-accent-dark/20 p-4 overflow-y-auto flex-1 min-h-0">
+                <div className="rounded-xl bg-[#0A162880] border border-brand-accent-dark/20 p-4">
                   <p className="text-sm text-white/80 leading-relaxed whitespace-pre-wrap">
                     {legislation.content}
                   </p>
                 </div>
               </div>
             )}
-          </>
+          </div>
         )}
 
         {/* Close button */}

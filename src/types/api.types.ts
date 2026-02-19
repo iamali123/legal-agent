@@ -50,13 +50,18 @@ export interface PaginatedResponse<T> {
 }
 
 /**
+ * User role (backend enum Users.role)
+ */
+export type UserRole = 'Admin' | 'Legal Officer' | 'Reviewer'
+
+/**
  * User type
  */
 export interface User {
   id: string
   email: string
   name: string
-  role: string
+  role: UserRole
   avatar?: string | null
   department?: string | null
   createdAt: string
@@ -83,10 +88,10 @@ export interface LoginRequest {
 
 /**
  * UAE Pass login request
+ * POST /auth/uae-pass body
  */
 export interface UAEPassLoginRequest {
-  uaePassToken: string
-  redirectUri: string
+  uaePassId: string
 }
 
 /**
@@ -101,4 +106,32 @@ export interface RefreshTokenRequest {
  */
 export interface LogoutRequest {
   refreshToken: string
+}
+
+/**
+ * User list item (GET /users)
+ */
+export interface UserListItem {
+  id: string
+  name: string
+  email: string
+  role: UserRole
+  department: string | null
+  avatar: string | null
+  uaePassId: string | null
+  lastLogin: string | null
+  createdAt: string
+  updatedAt: string
+  deletedAt: string | null
+}
+
+/**
+ * Create user request (POST /users)
+ */
+export interface CreateUserRequest {
+  name: string
+  email: string
+  password: string
+  role: UserRole
+  department: string
 }

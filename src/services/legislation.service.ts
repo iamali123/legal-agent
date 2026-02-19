@@ -11,7 +11,9 @@ import type {
 import type {
   Legislation,
   LegislationDetail,
+  LegislationSection,
   CreateLegislationRequest,
+  CreateLegislationSectionRequest,
   UpdateLegislationRequest,
   LegislationStats,
   LegislationListParams,
@@ -36,16 +38,20 @@ export const getLegislations = async (
     const items: Legislation[] = responseData.data.map((item: {
       id: string
       title: string
+      description?: string
       jurisdiction: string
       status: string
+      version?: string
       updatedAt?: string
       createdAt: string
       aiFlags?: { type: string; count?: number | null }
     }) => ({
       id: item.id,
       title: item.title,
+      description: item.description,
       jurisdiction: item.jurisdiction as Legislation['jurisdiction'],
       status: item.status as Legislation['status'],
+      version: item.version,
       lastUpdated: item.updatedAt || item.createdAt,
       createdAt: item.createdAt,
       aiFlags: item.aiFlags || { type: 'clean' as const },
@@ -70,16 +76,20 @@ export const getLegislations = async (
     const normalizedItems: Legislation[] = responseData.data.items.map((item: {
       id: string
       title: string
+      description?: string
       jurisdiction: string
       status: string
+      version?: string
       updatedAt?: string
       createdAt: string
       aiFlags?: { type: string; count?: number | null }
     }) => ({
       id: item.id,
       title: item.title,
+      description: item.description,
       jurisdiction: item.jurisdiction as Legislation['jurisdiction'],
       status: item.status as Legislation['status'],
+      version: item.version,
       lastUpdated: item.updatedAt || item.createdAt,
       createdAt: item.createdAt,
       aiFlags: item.aiFlags || { type: 'clean' as const },
@@ -159,6 +169,21 @@ export const updateLegislationStatus = async (
   const response = await apiClient.patch<ApiSuccessResponse<Legislation>>(
     `/legislations/${id}/status`,
     { status }
+  )
+  return response.data
+}
+
+/**
+ * Create a section for a legislation
+ * POST /legislations/:legislationId/sections
+ */
+export const createLegislationSection = async (
+  legislationId: string,
+  data: CreateLegislationSectionRequest
+): Promise<ApiSuccessResponse<LegislationSection>> => {
+  const response = await apiClient.post<ApiSuccessResponse<LegislationSection>>(
+    `/legislations/${legislationId}/sections`,
+    data
   )
   return response.data
 }

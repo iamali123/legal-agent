@@ -9,7 +9,9 @@ import { Contracts } from '@/pages/Contracts'
 import { Agreements } from '@/pages/Agreements'
 import { Approvals } from '@/pages/Approvals'
 import { AILegal } from '@/pages/AILegal'
+import { Admin } from '@/pages/Admin'
 import { Login } from '@/pages/Login'
+import { AuthCallback } from '@/pages/AuthCallback'
 
 export const router = createBrowserRouter([
   {
@@ -19,6 +21,10 @@ export const router = createBrowserRouter([
         <Login />
       </GuestOnly>
     ),
+  },
+  {
+    path: '/auth/callback',
+    element: <AuthCallback />,
   },
   {
     path: '/',
@@ -55,6 +61,10 @@ export const router = createBrowserRouter([
       {
         path: 'ai-legal',
         element: <AILegal />,
+      },
+      {
+        path: 'admin',
+        element: <Admin />,
       },
     ],
   },

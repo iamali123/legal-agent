@@ -3,14 +3,26 @@
  */
 
 export interface DashboardStats {
-  totalLegislations: number
-  legislationsThisMonth: number
-  pendingApprovals: number
-  urgentApprovals: number
-  activeContracts: number
-  expiringContracts: number
-  recentUpdates: number
-  recentUpdatesPeriod: string
+  users: {
+    total: number
+  }
+  legislations: {
+    total: number
+    byStatus: Array<{
+      status: string
+      count: string | number
+    }>
+  }
+  contracts: {
+    total: number
+    totalValue: number
+  }
+  approvals: {
+    pending: number
+  }
+  ai: {
+    processedJobs: number
+  }
 }
 
 export type AIHighlightType = 'warning' | 'info' | 'success' | 'error'

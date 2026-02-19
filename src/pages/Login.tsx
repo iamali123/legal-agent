@@ -5,12 +5,16 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import loginVideo from '@/assets/login-video.mp4'
 import logoImage from '@/assets/mbrhe-logo.png'
-import { useLogin, useUAEPassLogin } from '@/hooks/api'
+import { useLogin, useUAEPassLogin, type LoginRequestWithRememberMe, type UAEPassLoginRequestWithRememberMe } from '@/hooks/api'
+import { UAE_PASS_AUTH_URL } from '@/config/api.config'
+
+const UAE_PASS_CALLBACK_PATH = '/auth/callback'
 
 export function Login() {
   const [showPassword, setShowPassword] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [rememberMe, setRememberMe] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const loginMutation = useLogin()
@@ -24,10 +28,12 @@ export function Login() {
 
     setError(null)
     try {
-      await loginMutation.mutateAsync({
+      const loginData: LoginRequestWithRememberMe = {
         email: email.trim(),
         password,
-      })
+        rememberMe,
+      }
+      await loginMutation.mutateAsync(loginData)
       // Navigation happens automatically in useLogin hook's onSuccess
     } catch (err) {
       const errorMessage =
@@ -41,30 +47,31 @@ export function Login() {
 
   const handleUAEPassLogin = async () => {
     setError(null)
-    // Note: UAE Pass integration requires OAuth redirect flow
-    // For now, this is a placeholder - you'll need to:
-    // 1. Redirect to UAE Pass authorization URL
-    // 2. Handle callback with authorization code
-    // 3. Exchange code for token
-    // 4. Call uaePassMutation with the token
-    
-    // Example placeholder implementation:
-    alert('UAE Pass integration requires OAuth redirect flow. Please implement the UAE Pass OAuth flow first.')
-    
-    // Uncomment and implement when UAE Pass OAuth is ready:
-    // try {
-    //   const uaePassToken = await getUAEPassToken()
-    //   await uaePassMutation.mutateAsync({
-    //     uaePassToken,
-    //     redirectUri: window.location.origin + '/auth/callback',
-    //   })
-    // } catch (err) {
-    //   const errorMessage =
-    //     (err as { response?: { data?: { message?: string } }; message?: string })?.response?.data?.message ||
-    //     (err as { message?: string })?.message ||
-    //     'UAE Pass authentication failed. Please try again.'
-    //   setError(errorMessage)
-    // }
+    const redirectUri = `${window.location.origin}${UAE_PASS_CALLBACK_PATH}`
+
+    if (UAE_PASS_AUTH_URL) {
+      // Production: redirect to UAE Pass; they will redirect back to /auth/callback?uaePassId=...
+      const url = new URL(UAE_PASS_AUTH_URL)
+      url.searchParams.set('redirect_uri', redirectUri)
+      window.location.href = url.toString()
+      return
+    }
+
+    // Dev/demo: call backend directly with a test id (or redirect to callback with test id)
+    try {
+      const uaePassData: UAEPassLoginRequestWithRememberMe = {
+        uaePassId: 'UAE-PASS-12345',
+        rememberMe,
+      }
+      await uaePassMutation.mutateAsync(uaePassData)
+    } catch (err) {
+      const errorMessage =
+        (err as { response?: { data?: { message?: string } }; message?: string })?.response?.data
+          ?.message ||
+        (err as { message?: string })?.message ||
+        'UAE Pass authentication failed. Please try again.'
+      setError(errorMessage)
+    }
   }
 
   return (
@@ -161,6 +168,19 @@ export function Login() {
                   )}
                 </button>
               </div>
+            </div>
+
+            <div className="flex items-center">
+              <input
+                id="remember-me"
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                className="w-4 h-4 rounded border-brand-accent-dark/30 bg-transparent text-brand-accent-dark focus:ring-brand-accent-dark focus:ring-2"
+              />
+              <Label htmlFor="remember-me" className="ml-2 text-sm text-brand-muted-text-dark cursor-pointer">
+                Remember me
+              </Label>
             </div>
 
             <Button

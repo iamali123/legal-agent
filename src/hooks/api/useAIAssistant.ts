@@ -9,6 +9,8 @@ import type {
   ChatMessageRequest,
   AnalyzeDocumentRequest,
   ChatHistoryParams,
+  CreateConversationRequest,
+  SendMessageRequest,
 } from '@/types/ai-assistant.types'
 
 /**
@@ -16,6 +18,9 @@ import type {
  */
 export const aiAssistantKeys = {
   all: ['ai-assistant'] as const,
+  conversations: () => [...aiAssistantKeys.all, 'conversations'] as const,
+  conversation: (conversationId: string, params?: ChatHistoryParams) =>
+    [...aiAssistantKeys.all, 'conversation', conversationId, params] as const,
   chat: (conversationId: string, params?: ChatHistoryParams) =>
     [...aiAssistantKeys.all, 'chat', conversationId, params] as const,
   analysis: (jobId: string) =>
@@ -23,7 +28,77 @@ export const aiAssistantKeys = {
 }
 
 /**
- * Send chat message mutation
+ * Get all conversations
+ */
+export const useConversations = () => {
+  return useQuery({
+    queryKey: aiAssistantKeys.conversations(),
+    queryFn: () => aiAssistantService.getConversations(),
+    staleTime: 1 * 60 * 1000, // 1 minute
+  })
+}
+
+/**
+ * Create conversation mutation
+ */
+export const useCreateConversation = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (data: CreateConversationRequest) =>
+      aiAssistantService.createConversation(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: aiAssistantKeys.conversations(),
+      })
+    },
+  })
+}
+
+/**
+ * Get conversation with messages
+ */
+export const useConversation = (
+  conversationId: string,
+  params?: ChatHistoryParams
+) => {
+  return useQuery({
+    queryKey: aiAssistantKeys.conversation(conversationId, params),
+    queryFn: () => aiAssistantService.getConversation(conversationId),
+    enabled: !!conversationId,
+    staleTime: 30 * 1000, // 30 seconds
+  })
+}
+
+/**
+ * Send message to conversation mutation
+ */
+export const useSendMessage = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({
+      conversationId,
+      data,
+    }: {
+      conversationId: string
+      data: SendMessageRequest
+    }) => aiAssistantService.sendMessage(conversationId, data),
+    onSuccess: (_, variables) => {
+      // Invalidate conversation and chat history
+      queryClient.invalidateQueries({
+        queryKey: aiAssistantKeys.conversation(variables.conversationId),
+      })
+      queryClient.invalidateQueries({
+        queryKey: aiAssistantKeys.chat(variables.conversationId),
+      })
+    },
+  })
+}
+
+/**
+ * Send chat message mutation (legacy - maintained for backward compatibility)
+ * @deprecated Use useCreateConversation + useSendMessage instead
  */
 export const useSendChatMessage = () => {
   const queryClient = useQueryClient()
@@ -37,13 +112,21 @@ export const useSendChatMessage = () => {
         queryClient.invalidateQueries({
           queryKey: aiAssistantKeys.chat(response.data.conversationId),
         })
+        queryClient.invalidateQueries({
+          queryKey: aiAssistantKeys.conversation(response.data.conversationId),
+        })
       }
+      // Invalidate conversations list
+      queryClient.invalidateQueries({
+        queryKey: aiAssistantKeys.conversations(),
+      })
     },
   })
 }
 
 /**
- * Get chat history
+ * Get chat history (legacy - maintained for backward compatibility)
+ * @deprecated Use useConversation instead
  */
 export const useChatHistory = (
   conversationId: string,

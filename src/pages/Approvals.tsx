@@ -13,6 +13,7 @@ import {
   useApproveRequest,
   useRejectRequest,
   useRequestChanges,
+  useIsAdmin,
 } from '@/hooks/api'
 import type { Approval } from '@/types/approval.types'
 
@@ -47,7 +48,7 @@ function approvalToViewData(approval: Approval): ApprovalViewDialogData {
   return {
     title: approval.title,
     type: approval.type,
-    submittedBy: approval.submittedBy?.name ?? approval.assignee?.name ?? '—',
+    submittedBy: approval.submitter?.name ?? approval.assignee?.name ?? '—',
     date: approval.dueDate,
     priority: approval.priority,
     aiSummary: `AI Recommendation: ${approval.aiRecommendation} (${approval.confidence}% confidence)`,
@@ -61,6 +62,7 @@ export function Approvals() {
   const [viewDialogOpen, setViewDialogOpen] = useState(false)
   const [viewData, setViewData] = useState<ApprovalViewDialogData | null>(null)
   const [selectedApprovalId, setSelectedApprovalId] = useState<string | null>(null)
+  const isAdmin = useIsAdmin()
 
   const { data: listData, isLoading, error } = useApprovals()
   const approveMutation = useApproveRequest()
@@ -85,7 +87,7 @@ export function Approvals() {
   const handleApprove = () => {
     if (selectedApprovalId) {
       approveMutation.mutate(
-        { id: selectedApprovalId, data: {} },
+        { id: selectedApprovalId, data: undefined },
         { onSuccess: closeView }
       )
     }
@@ -212,7 +214,7 @@ export function Approvals() {
                       </div>
                       <div className="flex items-center gap-2 text-sm text-brand-muted-text-dark">
                         <User className="w-4 h-4 shrink-0" />
-                        <span>{approval.assignee?.name ?? '—'}</span>
+                        <span>{approval.assignee?.name ?? approval.submitter?.name ?? '—'}</span>
                       </div>
                       <div className="flex items-center gap-2 text-sm text-brand-muted-text-dark">
                         <Calendar className="w-4 h-4 shrink-0" />
@@ -254,29 +256,33 @@ export function Approvals() {
 
                     {approval.status === 'pending' && (
                       <div className="flex items-center gap-3">
-                        <button
-                          type="button"
-                          onClick={() => approveMutation.mutate({ id: approval.id })}
-                          disabled={approveMutation.isPending}
-                          className="w-8 h-8 rounded-full border-2 border-green-500 flex items-center justify-center hover:bg-green-500/20 transition-colors"
-                          aria-label="Approve"
-                        >
-                          <Check className="w-4 h-4 text-green-500" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            rejectMutation.mutate({
-                              id: approval.id,
-                              data: { reason: 'Rejected from portal' },
-                            })
-                          }
-                          disabled={rejectMutation.isPending}
-                          className="w-8 h-8 rounded-full border-2 border-red-500 flex items-center justify-center hover:bg-red-500/20 transition-colors"
-                          aria-label="Reject"
-                        >
-                          <X className="w-4 h-4 text-red-500" />
-                        </button>
+                        {isAdmin && (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => approveMutation.mutate({ id: approval.id, data: undefined })}
+                              disabled={approveMutation.isPending}
+                              className="w-8 h-8 rounded-full border-2 border-green-500 flex items-center justify-center hover:bg-green-500/20 transition-colors"
+                              aria-label="Approve"
+                            >
+                              <Check className="w-4 h-4 text-green-500" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                rejectMutation.mutate({
+                                  id: approval.id,
+                                  data: { reason: 'Rejected from portal' },
+                                })
+                              }
+                              disabled={rejectMutation.isPending}
+                              className="w-8 h-8 rounded-full border-2 border-red-500 flex items-center justify-center hover:bg-red-500/20 transition-colors"
+                              aria-label="Reject"
+                            >
+                              <X className="w-4 h-4 text-red-500" />
+                            </button>
+                          </>
+                        )}
                         <button
                           type="button"
                           onClick={() => openView(approval)}
@@ -300,9 +306,9 @@ export function Approvals() {
         open={viewDialogOpen}
         data={viewData}
         onClose={closeView}
-        onRequestChanges={() => handleRequestChanges()}
-        onReject={() => handleReject()}
-        onApprove={() => handleApprove()}
+        onRequestChanges={isAdmin ? () => handleRequestChanges() : undefined}
+        onReject={isAdmin ? () => handleReject() : undefined}
+        onApprove={isAdmin ? () => handleApprove() : undefined}
       />
     </div>
   )

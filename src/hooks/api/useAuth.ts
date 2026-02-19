@@ -6,13 +6,26 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import * as authService from '@/services/auth.service'
-import { clearTokens } from '@/lib/api/client'
+import { clearTokens, getRefreshToken, getRefreshTokenCookie } from '@/lib/api/client'
 import type {
   LoginRequest,
   UAEPassLoginRequest,
   RefreshTokenRequest,
-  LogoutRequest,
 } from '@/types/api.types'
+
+/**
+ * Extended login request with rememberMe
+ */
+export interface LoginRequestWithRememberMe extends LoginRequest {
+  rememberMe?: boolean
+}
+
+/**
+ * Extended UAE Pass login request with rememberMe
+ */
+export interface UAEPassLoginRequestWithRememberMe extends UAEPassLoginRequest {
+  rememberMe?: boolean
+}
 
 /**
  * Login mutation hook
@@ -22,7 +35,10 @@ export const useLogin = () => {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (credentials: LoginRequest) => authService.login(credentials),
+    mutationFn: (credentials: LoginRequestWithRememberMe) => {
+      const { rememberMe, ...loginData } = credentials
+      return authService.login(loginData, rememberMe ?? false)
+    },
     onSuccess: () => {
       // Invalidate user query to refetch user data
       queryClient.invalidateQueries({ queryKey: ['user', 'me'] })
@@ -39,8 +55,10 @@ export const useUAEPassLogin = () => {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (credentials: UAEPassLoginRequest) =>
-      authService.uaePassLogin(credentials),
+    mutationFn: (credentials: UAEPassLoginRequestWithRememberMe) => {
+      const { rememberMe, ...loginData } = credentials
+      return authService.uaePassLogin(loginData, rememberMe ?? false)
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user', 'me'] })
       navigate('/')
@@ -59,15 +77,22 @@ export const useRefreshToken = () => {
 }
 
 /**
- * Logout mutation hook
+ * Logout mutation hook.
+ * Calls logout API when refresh token exists; always clears local tokens and redirects to login (onSettled).
  */
 export const useLogout = () => {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (request: LogoutRequest) => authService.logout(request),
-    onSuccess: () => {
+    mutationFn: async () => {
+      const refreshToken = getRefreshToken()
+      if (refreshToken) {
+        return authService.logout({ refreshToken })
+      }
+      return { success: true as const, message: 'Logged out', data: null }
+    },
+    onSettled: () => {
       clearTokens()
       queryClient.clear()
       navigate('/login')

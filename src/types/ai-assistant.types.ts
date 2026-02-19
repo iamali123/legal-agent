@@ -1,6 +1,16 @@
 /**
  * AI Assistant Types
+ * Aligns with backend enums where applicable.
  */
+
+/** Backend enum ChatMessages.role */
+export type ChatMessageRole = 'user' | 'assistant'
+
+/** Backend enum AiJobs.jobType */
+export type AIJobType = 'generate_draft' | 'analyze' | 'chat'
+
+/** Backend enum AiJobs.status */
+export type AIJobStatus = 'queued' | 'processing' | 'completed' | 'failed'
 
 export type AnalysisType = 'summarize' | 'analyze_risks' | 'check_compliance' | 'draft_document'
 
@@ -27,7 +37,7 @@ export interface ChatResponse {
 
 export interface ChatMessage {
   id: string
-  role: 'user' | 'assistant'
+  role: ChatMessageRole
   content: string
   timestamp: string
   attachments?: Array<{
@@ -36,9 +46,32 @@ export interface ChatMessage {
   }> | null
 }
 
+export interface Conversation {
+  id: string
+  title: string
+  context?: Record<string, unknown>
+  createdAt: string
+  updatedAt?: string
+}
+
 export interface ChatHistory {
-  conversationId: string
+  id: string
+  title: string
+  context?: Record<string, unknown>
   messages: ChatMessage[]
+  createdAt: string
+  updatedAt?: string
+  // Legacy field for backward compatibility
+  conversationId?: string
+}
+
+export interface CreateConversationRequest {
+  title?: string
+  context?: Record<string, unknown>
+}
+
+export interface SendMessageRequest {
+  content: string
 }
 
 export interface AnalyzeDocumentRequest {
@@ -49,7 +82,7 @@ export interface AnalyzeDocumentRequest {
 
 export interface AIJobResponse {
   jobId: string
-  status: 'processing' | 'completed' | 'failed'
+  status: AIJobStatus
   estimatedTime: number
   legislationId?: string | null
   contractId?: string | null
@@ -58,7 +91,7 @@ export interface AIJobResponse {
 
 export interface AnalysisResult {
   jobId: string
-  status: 'processing' | 'completed' | 'failed'
+  status: AIJobStatus
   analysisType: AnalysisType
   result?: {
     summary: string

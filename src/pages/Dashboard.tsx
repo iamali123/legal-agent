@@ -51,11 +51,11 @@ export function Dashboard() {
               <div>
                 <p className="text-sm text-brand-accent-dark mb-2">Total Legislations</p>
                 <p className="text-5xl font-bold text-white mb-1">
-                  {statsLoading ? '—' : stats?.totalLegislations ?? 0}
+                  {statsLoading ? '—' : stats?.legislations?.total ?? 0}
                 </p>
                 <hr className="border-0 h-px bg-hr-glow my-2" />
                 <p className="text-xs text-brand-muted-text-dark">
-                  +{stats?.legislationsThisMonth ?? 0} this month
+                  {Number(stats?.legislations?.byStatus?.find((s) => s.status === 'active')?.count ?? 0)} active
                 </p>
               </div>
               <CornerAccents />
@@ -70,11 +70,11 @@ export function Dashboard() {
               <div>
                 <p className="text-sm text-brand-accent-dark mb-2">Pending Approvals</p>
                 <p className="text-5xl font-bold text-white mb-1">
-                  {statsLoading ? '—' : stats?.pendingApprovals ?? 0}
+                  {statsLoading ? '—' : stats?.approvals?.pending ?? 0}
                 </p>
                 <hr className="border-0 h-px bg-hr-glow my-2" />
                 <p className="text-xs text-brand-muted-text-dark">
-                  {stats?.urgentApprovals ?? 0} urgent
+                  Requires review
                 </p>
               </div>
               <CornerAccents />
@@ -87,13 +87,13 @@ export function Dashboard() {
                 <FileCheck className="w-6 h-6 text-green-400" />
               </div>
               <div>
-                <p className="text-sm text-brand-accent-dark mb-2">Active Contracts</p>
+                <p className="text-sm text-brand-accent-dark mb-2">Total Contracts</p>
                 <p className="text-5xl font-bold text-white mb-1">
-                  {statsLoading ? '—' : stats?.activeContracts ?? 0}
+                  {statsLoading ? '—' : stats?.contracts?.total ?? 0}
                 </p>
                 <hr className="border-0 h-px bg-hr-glow my-2" />
                 <p className="text-xs text-brand-muted-text-dark">
-                  {stats?.expiringContracts ?? 0} expiring soon
+                  Total value: {statsLoading ? '—' : new Intl.NumberFormat('en-AE', { style: 'currency', currency: 'AED', minimumFractionDigits: 0 }).format(stats?.contracts?.totalValue ?? 0)}
                 </p>
               </div>
               <CornerAccents />
@@ -106,13 +106,13 @@ export function Dashboard() {
                 <Calendar className="w-6 h-6 text-purple-400" />
               </div>
               <div>
-                <p className="text-sm text-brand-accent-dark mb-2">Recent Updates</p>
+                <p className="text-sm text-brand-accent-dark mb-2">AI Processed Jobs</p>
                 <p className="text-5xl font-bold text-white mb-1">
-                  {statsLoading ? '—' : stats?.recentUpdates ?? 0}
+                  {statsLoading ? '—' : stats?.ai?.processedJobs ?? 0}
                 </p>
+                <hr className="border-0 h-px bg-hr-glow my-2" />
                 <p className="text-xs text-brand-muted-text-dark">
-                  <hr className="border-0 h-px bg-hr-glow my-2" />
-                  {stats?.recentUpdatesPeriod ?? 'Last 7 days'}
+                  Total AI operations
                 </p>
               </div>
               <CornerAccents />

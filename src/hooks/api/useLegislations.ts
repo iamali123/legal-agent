@@ -8,6 +8,7 @@ import * as legislationService from '@/services/legislation.service'
 import type {
   LegislationListParams,
   CreateLegislationRequest,
+  CreateLegislationSectionRequest,
   UpdateLegislationRequest,
 } from '@/types/legislation.types'
 
@@ -21,6 +22,8 @@ export const legislationKeys = {
     [...legislationKeys.lists(), params] as const,
   details: () => [...legislationKeys.all, 'detail'] as const,
   detail: (id: string) => [...legislationKeys.details(), id] as const,
+  /** For future GET /legislations/:id/sections */
+  sections: (id: string) => [...legislationKeys.detail(id), 'sections'] as const,
   stats: () => [...legislationKeys.all, 'stats'] as const,
 }
 
@@ -92,6 +95,24 @@ export const useUpdateLegislation = () => {
 }
 
 /**
+ * Update legislation status mutation
+ * PATCH /legislations/:id/status { status }
+ */
+export const useUpdateLegislationStatus = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ id, status }: { id: string; status: string }) =>
+      legislationService.updateLegislationStatus(id, status),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: legislationKeys.lists() })
+      queryClient.invalidateQueries({ queryKey: legislationKeys.detail(variables.id) })
+      queryClient.invalidateQueries({ queryKey: legislationKeys.stats() })
+    },
+  })
+}
+
+/**
  * Delete legislation mutation
  */
 export const useDeleteLegislation = () => {
@@ -117,6 +138,32 @@ export const useGenerateLegislationDraft = () => {
       legislationService.generateLegislationDraft(id, data),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: legislationKeys.detail(variables.id) })
+    },
+  })
+}
+
+/**
+ * Create legislation section mutation
+ * POST /legislations/:id/sections
+ */
+export const useCreateLegislationSection = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({
+      legislationId,
+      data,
+    }: {
+      legislationId: string
+      data: CreateLegislationSectionRequest
+    }) => legislationService.createLegislationSection(legislationId, data),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: legislationKeys.detail(variables.legislationId),
+      })
+      queryClient.invalidateQueries({
+        queryKey: legislationKeys.sections(variables.legislationId),
+      })
     },
   })
 }

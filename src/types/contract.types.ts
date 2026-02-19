@@ -1,8 +1,15 @@
 /**
  * Contract Types
+ * Status aligns with backend ENUM: draft, pending_approval, approved, active, expired, terminated
  */
 
-export type ContractStatus = 'active' | 'expiring' | 'inReview' | 'expired' | 'terminated'
+export type ContractStatus =
+  | 'draft'
+  | 'pending_approval'
+  | 'approved'
+  | 'active'
+  | 'expired'
+  | 'terminated'
 export type ContractType = 'Service Agreement' | 'Lease' | 'License' | 'NDA' | 'Other'
 
 export interface Contract {
@@ -37,14 +44,19 @@ export interface ContractDetail extends Contract {
   attachments: File[]
 }
 
+/** Request body for POST /contracts - matches backend API exactly */
 export interface CreateContractRequest {
   title: string
-  contractType: ContractType
   counterparty: string
-  value: string
-  currency?: string
-  durationMonths: string
-  keyTerms: string
+  type: ContractType
+  valueNumeric: number
+  currency: string
+  startDate: string
+  endDate: string
+  durationMonths: number
+  status: ContractStatus
+  keyTerms: Record<string, unknown> | string
+  content?: string
 }
 
 export interface UpdateContractRequest {
@@ -55,9 +67,12 @@ export interface UpdateContractRequest {
 }
 
 export interface ContractStats {
+  draft: number
+  pending_approval: number
+  approved: number
   active: number
-  expiringSoon: number
-  inReview: number
+  expired: number
+  terminated: number
   aiRiskFlags: number
 }
 

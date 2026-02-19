@@ -1,5 +1,6 @@
 /**
  * Approval Types
+ * Status and priority align with backend enums Approvals.status and Approvals.priority
  */
 
 export type ApprovalStatus = 'pending' | 'approved' | 'rejected' | 'changesRequested'
@@ -12,12 +13,12 @@ export interface Approval {
   type: ApprovalType
   entityId: string
   entityType: string
-  assignee: {
-    id: string
+  assigneeId?: string
+  submittedById?: string
+  assignee?: {
     name: string
   }
-  submittedBy: {
-    id: string
+  submitter?: {
     name: string
   }
   dueDate: string
@@ -26,6 +27,8 @@ export interface Approval {
   aiRecommendation: string
   confidence: number
   createdAt: string
+  updatedAt?: string
+  deletedAt?: string | null
   approvedAt?: string | null
 }
 

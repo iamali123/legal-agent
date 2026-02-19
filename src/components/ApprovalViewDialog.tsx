@@ -104,7 +104,7 @@ export function ApprovalViewDialog({
         </div>
 
         {/* AI Recommendation - full width */}
-        <div className="px-6 pb-4">
+        <div className="px-6 pb-4 flex-1 min-h-0 overflow-y-auto sidebar-nav-scroll">
           <div className="rounded-xl bg-[#0A162880] border border-brand-accent-dark/20 px-4 py-3">
             <div className="flex items-center justify-between mb-2">
               <p className="text-xs text-brand-accent-dark uppercase tracking-wide">AI Recommendation</p>
@@ -117,25 +117,31 @@ export function ApprovalViewDialog({
           </div>
         </div>
 
-        {/* Action Buttons - Approve and Reject circles */}
-        <div className="p-6 pt-2 flex items-center gap-3 shrink-0">
-          <button
-            type="button"
-            onClick={() => onApprove?.(data)}
-            className="w-10 h-10 rounded-full border-2 border-green-500 flex items-center justify-center hover:bg-green-500/20 transition-colors"
-            aria-label="Approve"
-          >
-            <Check className="w-5 h-5 text-green-500" />
-          </button>
-          <button
-            type="button"
-            onClick={() => onReject?.(data)}
-            className="w-10 h-10 rounded-full border-2 border-red-500 flex items-center justify-center hover:bg-red-500/20 transition-colors"
-            aria-label="Reject"
-          >
-            <X className="w-5 h-5 text-red-500" />
-          </button>
-        </div>
+        {/* Action Buttons - only show when caller provides handlers (e.g. Admin) */}
+        {(onApprove ?? onReject ?? onRequestChanges) && (
+          <div className="p-6 pt-2 flex items-center gap-3 shrink-0">
+            {onApprove && (
+              <button
+                type="button"
+                onClick={() => onApprove(data)}
+                className="w-10 h-10 rounded-full border-2 border-green-500 flex items-center justify-center hover:bg-green-500/20 transition-colors"
+                aria-label="Approve"
+              >
+                <Check className="w-5 h-5 text-green-500" />
+              </button>
+            )}
+            {onReject && (
+              <button
+                type="button"
+                onClick={() => onReject(data)}
+                className="w-10 h-10 rounded-full border-2 border-red-500 flex items-center justify-center hover:bg-red-500/20 transition-colors"
+                aria-label="Reject"
+              >
+                <X className="w-5 h-5 text-red-500" />
+              </button>
+            )}
+          </div>
+        )}
         </>
       )}
       </div>

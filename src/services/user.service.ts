@@ -1,14 +1,14 @@
 /**
  * User Service
- * API functions for user profile endpoints
+ * API functions for user profile and admin user management
  */
 
 import { apiClient } from '@/lib/api/client'
 import type {
   ApiSuccessResponse,
-} from '@/types/api.types'
-import type {
   User,
+  UserListItem,
+  CreateUserRequest,
 } from '@/types/api.types'
 
 /**
@@ -19,6 +19,31 @@ export const getCurrentUser = async (): Promise<
 > => {
   const response = await apiClient.get<ApiSuccessResponse<User>>(
     '/users/me'
+  )
+  return response.data
+}
+
+/**
+ * Get all users (admin)
+ */
+export const getUsers = async (): Promise<
+  ApiSuccessResponse<UserListItem[]>
+> => {
+  const response = await apiClient.get<ApiSuccessResponse<UserListItem[]>>(
+    '/users'
+  )
+  return response.data
+}
+
+/**
+ * Create user (admin)
+ */
+export const createUser = async (
+  data: CreateUserRequest
+): Promise<ApiSuccessResponse<UserListItem>> => {
+  const response = await apiClient.post<ApiSuccessResponse<UserListItem>>(
+    '/users',
+    data
   )
   return response.data
 }

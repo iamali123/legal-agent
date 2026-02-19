@@ -22,28 +22,31 @@ import type {
 export const getDashboardStats = async (): Promise<
   ApiSuccessResponse<DashboardStats>
 > => {
-  const response = await apiClient.get<ApiSuccessResponse<{
-    users?: { total?: number }
-    legislations?: { total?: number; byStatus?: Array<{ status: string; count: string | number }> }
-    contracts?: { total?: number; totalValue?: number }
-    approvals?: { pending?: number; urgent?: number }
-    ai?: { processedJobs?: number }
-  }>>(
+  const response = await apiClient.get<ApiSuccessResponse<DashboardStats>>(
     '/dashboard/stats'
   )
   
-  // Transform API response to DashboardStats format
+  // Normalize the response data
   const apiData = response.data.data
   
   const normalizedStats: DashboardStats = {
-    totalLegislations: apiData.legislations?.total ?? 0,
-    legislationsThisMonth: 0, // API doesn't provide month-specific data
-    pendingApprovals: apiData.approvals?.pending ?? 0,
-    urgentApprovals: apiData.approvals?.urgent ?? 0,
-    activeContracts: apiData.contracts?.total ?? 0,
-    expiringContracts: 0, // API doesn't provide this, default to 0
-    recentUpdates: apiData.ai?.processedJobs ?? 0,
-    recentUpdatesPeriod: 'Last 7 days', // Default value
+    users: {
+      total: apiData.users?.total ?? 0,
+    },
+    legislations: {
+      total: apiData.legislations?.total ?? 0,
+      byStatus: apiData.legislations?.byStatus ?? [],
+    },
+    contracts: {
+      total: apiData.contracts?.total ?? 0,
+      totalValue: apiData.contracts?.totalValue ?? 0,
+    },
+    approvals: {
+      pending: apiData.approvals?.pending ?? 0,
+    },
+    ai: {
+      processedJobs: apiData.ai?.processedJobs ?? 0,
+    },
   }
   
   return {
