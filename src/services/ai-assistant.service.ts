@@ -84,6 +84,87 @@ export const sendMessage = async (
 }
 
 /**
+ * Send message with streaming response (token-by-token).
+ * POST /ai/chat/conversations/:conversationId/messages/stream
+ * Consumes SSE stream, calls onToken for each token, returns full reply when done.
+ */
+export const sendMessageStream = async (
+  conversationId: string,
+  data: SendMessageRequest,
+  onToken: (token: string) => void
+): Promise<string> => {
+  const { getAccessToken } = await import('@/lib/api/client')
+  const { getApiBaseURL } = await import('@/config/api.config')
+  const token = getAccessToken?.() ?? localStorage.getItem('legal_portal_access_token')
+  const baseURL = getApiBaseURL()
+  const url = `${baseURL}/ai/chat/conversations/${conversationId}/messages/stream`
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(data),
+  })
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ message: res.statusText }))
+    throw new Error(err?.message || `Request failed: ${res.status}`)
+  }
+
+  const reader = res.body?.getReader()
+  if (!reader) throw new Error('Stream not supported')
+
+  const decoder = new TextDecoder()
+  let buffer = ''
+  let fullReply = ''
+
+  while (true) {
+    const { done, value } = await reader.read()
+    if (done) break
+    buffer += decoder.decode(value, { stream: true })
+    const parts = buffer.split('\n\n')
+    buffer = parts.pop() ?? ''
+    for (const part of parts) {
+      const line = part.trim()
+      if (line.startsWith('data: ')) {
+        try {
+          const payload = JSON.parse(line.slice(6)) as { token?: string; done?: boolean; error?: string }
+          if (payload.token) {
+            fullReply += payload.token
+            onToken(payload.token)
+          }
+          if (payload.error) throw new Error(payload.error)
+        } catch (e) {
+          if (e instanceof SyntaxError) {
+            // JSON parse failed, skip
+          } else if (e instanceof Error) {
+            throw e
+          }
+        }
+      }
+    }
+  }
+  if (buffer.trim()) {
+    const line = buffer.trim()
+    if (line.startsWith('data: ')) {
+      try {
+        const payload = JSON.parse(line.slice(6)) as { token?: string; done?: boolean; error?: string }
+        if (payload.token) {
+          fullReply += payload.token
+          onToken(payload.token)
+        }
+        if (payload.error) throw new Error(payload.error)
+      } catch (e) {
+        if (!(e instanceof SyntaxError)) throw e
+      }
+    }
+  }
+  return fullReply
+}
+
+/**
  * Create AI job (for document analysis or draft generation)
  */
 export const createAIJob = async (
@@ -109,6 +190,23 @@ export const getAIJob = async (
 ): Promise<ApiSuccessResponse<AnalysisResult>> => {
   const response = await apiClient.get<ApiSuccessResponse<AnalysisResult>>(
     `/ai/jobs/${jobId}`
+  )
+  return response.data
+}
+
+/**
+ * Inject a message directly into a conversation without triggering the AI.
+ * Used to record panel results (Summarize, Check Compliance) into the chat history.
+ * POST /ai/chat/conversations/:conversationId/inject
+ */
+export const injectMessage = async (
+  conversationId: string,
+  content: string,
+  role: 'assistant' | 'user' = 'assistant'
+): Promise<ApiSuccessResponse<unknown>> => {
+  const response = await apiClient.post<ApiSuccessResponse<unknown>>(
+    `/ai/chat/conversations/${conversationId}/inject`,
+    { role, content }
   )
   return response.data
 }

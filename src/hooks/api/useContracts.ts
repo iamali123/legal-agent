@@ -10,6 +10,7 @@ import type {
   CreateContractRequest,
   UpdateContractRequest,
 } from '@/types/contract.types'
+// CreateContractRequest kept for useCreateContract; UpdateContractRequest for useUpdateContract
 
 /**
  * Query keys for contracts
@@ -113,10 +114,9 @@ export const useGenerateContractDraft = () => {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: CreateContractRequest }) =>
-      contractService.generateContractDraft(id, data),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: contractKeys.detail(variables.id) })
+    mutationFn: (id: string) => contractService.generateContractDraft(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: contractKeys.lists() })
     },
   })
 }

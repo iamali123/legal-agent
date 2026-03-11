@@ -1,15 +1,16 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import {
   Sparkles,
   Maximize2,
   Minimize2,
   X,
   FileText,
-  AlertTriangle,
   CheckCircle2,
-  PenLine,
   Paperclip,
   Send,
+  Plus,
+  History,
+  ChevronDown,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -18,18 +19,23 @@ import {
   useSendChatMessage,
   useChatHistory,
   useCreateConversation,
-  useSendMessage,
+  useSendMessageStream,
   useConversation,
+  useConversations,
+  useInjectMessage,
 } from '@/hooks/api'
+import { useQueryClient } from '@tanstack/react-query'
+import { aiAssistantKeys } from '@/hooks/api/useAIAssistant'
+import { CheckCompliancePanel } from '@/components/CheckCompliancePanel'
+import { SummarizePanel } from '@/components/SummarizePanel'
 
 const SUGGESTED_ACTIONS = [
   { label: 'Summarize', icon: FileText },
-  { label: 'Analyze Risks', icon: AlertTriangle },
   { label: 'Check Compliance', icon: CheckCircle2 },
-  { label: 'Draft Document', icon: PenLine },
 ] as const
 
-const WELCOME_MESSAGE = "Hi! I'm your AI Legal Assistant. How can I help you today? You can ask me to summarize documents, analyze risks, check compliance, or draft legal text."
+const WELCOME_MESSAGE =
+  "Hi! I'm your AI Legal Assistant. How can I help you today? You can ask me to summarize documents, analyze risks, check compliance, or draft legal text."
 
 interface AILegalAssistantChatProps {
   isOpen?: boolean
@@ -50,109 +56,179 @@ export function AILegalAssistantChat({
   context = 'DASHBOARD',
   embedded = false,
 }: AILegalAssistantChatProps) {
+  const queryClient = useQueryClient()
   const [input, setInput] = useState('')
   const [conversationId, setConversationId] = useState<string | null>(null)
+  const [activeMode, setActiveMode] = useState<'chat' | 'check-compliance' | 'summarize'>('chat')
+  const [streamingContent, setStreamingContent] = useState('')
+  const [waitingForAI, setWaitingForAI] = useState(false)
+  const [showHistory, setShowHistory] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
+  const historyRef = useRef<HTMLDivElement>(null)
+  const expectedCountWhenWaitingRef = useRef<number>(0)
 
-  // Use new API hooks when conversationId exists, fallback to legacy for backward compatibility
+  // Conversation management hooks
   const createConversationMutation = useCreateConversation()
-  const sendMessageMutation = useSendMessage()
+  const sendMessageStreamMutation = useSendMessageStream()
+  const injectMutation = useInjectMessage()
   const { data: conversationData, isLoading: conversationLoading } = useConversation(
     conversationId ?? ''
   )
-  
+  const { data: conversationsListData } = useConversations()
+  const conversationsList = conversationsListData?.data ?? []
+
   // Legacy hooks for backward compatibility
   const sendMutation = useSendChatMessage()
   const { data: historyData, isLoading: historyLoading } = useChatHistory(conversationId ?? '')
-  
-  // Prefer new API data if available, fallback to legacy
-  // Handle both response structures: ChatHistory with id or conversationId
-  const messages =
-    conversationData?.data?.messages ?? historyData?.data?.messages ?? []
+
+  // Prefer new API data; fallback to legacy
+  const messages = conversationData?.data?.messages ?? historyData?.data?.messages ?? []
   const isLoadingMessages = conversationLoading || historyLoading
-  
-  // Update conversationId from response if available (only once)
+
+  // Sync conversationId from response (first load)
   useEffect(() => {
     if (!conversationId) {
-      if (conversationData?.data?.id) {
-        setConversationId(conversationData.data.id)
-      } else if (historyData?.data?.conversationId) {
+      if (conversationData?.data?.id) setConversationId(conversationData.data.id)
+      else if (historyData?.data?.conversationId)
         setConversationId(historyData.data.conversationId)
-      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversationData?.data?.id, historyData?.data?.conversationId])
 
+  // Auto-scroll to bottom when messages or streaming content update
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
-  }, [messages.length])
+  }, [messages.length, streamingContent])
 
-  const handleSend = async () => {
-    const text = input.trim()
-    if (!text || (sendMutation.isPending && sendMessageMutation.isPending)) return
+  // Poll when using legacy non-streaming path
+  useEffect(() => {
+    if (!waitingForAI || !conversationId) return
+    const interval = setInterval(() => {
+      queryClient.invalidateQueries({ queryKey: aiAssistantKeys.conversation(conversationId) })
+    }, 2000)
+    return () => clearInterval(interval)
+  }, [waitingForAI, conversationId, queryClient])
 
-    setInput('')
+  useEffect(() => {
+    if (!waitingForAI) return
+    const last = messages[messages.length - 1]
+    const expected = expectedCountWhenWaitingRef.current
+    if (last?.role === 'assistant' && messages.length >= expected) setWaitingForAI(false)
+  }, [messages, waitingForAI])
 
-    // If we have a conversationId, use the new API structure
-    if (conversationId) {
-      sendMessageMutation.mutate(
-        {
-          conversationId,
-          data: { content: text },
-        },
-        {
-          onSuccess: () => {
-            // Conversation will be refetched automatically via query invalidation
-          },
-        }
-      )
-      return
+  // Close history dropdown on outside click
+  useEffect(() => {
+    if (!showHistory) return
+    const handleClick = (e: MouseEvent) => {
+      if (historyRef.current && !historyRef.current.contains(e.target as Node)) {
+        setShowHistory(false)
+      }
     }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [showHistory])
 
-    // Otherwise, create a new conversation first, then send the message
-    try {
-      const conversation = await createConversationMutation.mutateAsync({
-        title: text.length > 50 ? `${text.substring(0, 50)}...` : text,
+  // ── Ensure a conversation exists, then return its id ──────────────────────
+  const ensureConversation = useCallback(
+    async (title?: string): Promise<string> => {
+      if (conversationId) return conversationId
+      const conv = await createConversationMutation.mutateAsync({
+        title: title?.slice(0, 60) || 'New Conversation',
         context: context ? { topic: context } : undefined,
       })
+      const id = conv.data.id
+      setConversationId(id)
+      return id
+    },
+    [conversationId, createConversationMutation, context]
+  )
 
-      if (conversation.data.id) {
-        setConversationId(conversation.data.id)
-        // Send the first message
-        sendMessageMutation.mutate({
-          conversationId: conversation.data.id,
-          data: { content: text },
-        })
-      }
-    } catch (error) {
-      // Fallback to legacy method if new API fails
-      sendMutation.mutate(
+  // ── Send a chat message (streaming) ─────────────────────────────────────────
+  const handleSend = async () => {
+    const text = input.trim()
+    if (!text || sendMessageStreamMutation.isPending || sendMutation.isPending) return
+    setInput('')
+    setStreamingContent('')
+
+    try {
+      const convId = await ensureConversation(text.length > 50 ? `${text.slice(0, 50)}…` : text)
+      sendMessageStreamMutation.mutate(
         {
-          message: text,
-          context,
-          conversationId: conversationId ?? undefined,
+          conversationId: convId,
+          data: { content: text },
+          onToken: (token) => setStreamingContent((prev) => prev + token),
         },
         {
+          onSettled: () => setStreamingContent(''),
+        }
+      )
+    } catch {
+      sendMutation.mutate(
+        { message: text, context, conversationId: conversationId ?? undefined },
+        {
           onSuccess: (res) => {
-            if (res?.data?.conversationId && !conversationId) {
+            if (res?.data?.conversationId && !conversationId)
               setConversationId(res.data.conversationId)
-            }
+            expectedCountWhenWaitingRef.current = messages.length + 1
+            setWaitingForAI(true)
           },
         }
       )
     }
+  }
+
+  // ── Panel result injection ─────────────────────────────────────────────────
+  const handlePanelClose = useCallback(
+    async (resultText?: string) => {
+      setActiveMode('chat')
+      if (!resultText) return
+      try {
+        const convId = await ensureConversation(
+          resultText.split('\n')[0].replace(/[*_📄✅🔴🟡🔵💚]/g, '').trim().slice(0, 60) ||
+            'Analysis Result'
+        )
+        injectMutation.mutate({ conversationId: convId, content: resultText })
+      } catch {
+        // silent — panel still closes
+      }
+    },
+    [ensureConversation, injectMutation]
+  )
+
+  // ── Start a new chat ───────────────────────────────────────────────────────
+  const handleNewChat = () => {
+    setConversationId(null)
+    setActiveMode('chat')
+    setStreamingContent('')
+    setWaitingForAI(false)
+    setShowHistory(false)
+  }
+
+  // ── Switch to a previous conversation ─────────────────────────────────────
+  const handleSelectConversation = (id: string) => {
+    setConversationId(id)
+    setActiveMode('chat')
+    setShowHistory(false)
+    setStreamingContent('')
+    setWaitingForAI(false)
   }
 
   const handleSuggestedAction = (label: string) => {
+    if (label === 'Check Compliance') { setActiveMode('check-compliance'); return }
+    if (label === 'Summarize') { setActiveMode('summarize'); return }
     setInput((prev) => (prev ? `${prev} ${label}` : label))
   }
 
+  // ── Render helpers ─────────────────────────────────────────────────────────
+  const isBusy =
+    waitingForAI ||
+    sendMutation.isPending ||
+    sendMessageStreamMutation.isPending ||
+    createConversationMutation.isPending ||
+    injectMutation.isPending
+
   const showWelcome =
-    !conversationId &&
-    messages.length === 0 &&
-    !sendMutation.isPending &&
-    !sendMessageMutation.isPending &&
-    !createConversationMutation.isPending
+    !conversationId && messages.length === 0 && !isBusy
 
   const messageList = (
     <div className="flex flex-col gap-4">
@@ -169,12 +245,14 @@ export function AILegalAssistantChat({
           </div>
         </div>
       )}
+
       {isLoadingMessages && conversationId && (
         <div className="flex gap-2">
           <Sparkles className="w-4 h-4 text-brand-accent-dark shrink-0 mt-0.5" />
-          <p className="text-sm text-brand-muted-text-dark">Loading conversation...</p>
+          <p className="text-sm text-brand-muted-text-dark">Loading conversation…</p>
         </div>
       )}
+
       {messages.map((msg) =>
         msg.role === 'user' ? (
           <div key={msg.id} className="flex justify-end">
@@ -198,12 +276,21 @@ export function AILegalAssistantChat({
           </div>
         )
       )}
-      {(sendMutation.isPending || sendMessageMutation.isPending || createConversationMutation.isPending) && (
+
+      {(isBusy || streamingContent) && (
         <div className="flex gap-2">
           <div className="flex items-start gap-2 max-w-[85%]">
-            <Sparkles className="w-4 h-4 text-brand-accent-dark shrink-0 mt-0.5 animate-pulse" />
-            <div className="rounded-xl rounded-tl-sm bg-[#0A1628E5] border border-brand-accent-dark/20 px-4 py-3 text-sm text-brand-muted-text-dark">
-              Thinking...
+            <Sparkles
+              className={cn(
+                'w-4 h-4 text-brand-accent-dark shrink-0 mt-0.5',
+                !streamingContent && 'animate-pulse'
+              )}
+            />
+            <div>
+              <p className="text-xs font-medium text-brand-accent-dark mb-1">AI Assistant</p>
+              <div className="rounded-xl rounded-tl-sm bg-[#0A1628E5] border border-brand-accent-dark/20 px-4 py-3 text-sm text-foreground whitespace-pre-wrap">
+                {streamingContent || 'Thinking…'}
+              </div>
             </div>
           </div>
         </div>
@@ -211,6 +298,122 @@ export function AILegalAssistantChat({
     </div>
   )
 
+  const suggestedActionsBar = (size: 'sm' | 'base') => (
+    <div className={cn('flex flex-wrap gap-2', size === 'base' ? 'px-6 py-4' : 'px-4 py-2')}>
+      {SUGGESTED_ACTIONS.map(({ label, icon: Icon }) => (
+        <button
+          key={label}
+          type="button"
+          onClick={() => handleSuggestedAction(label)}
+          className={cn(
+            'inline-flex items-center gap-2 rounded-xl bg-white/10 text-brand-accent-dark border border-brand-accent-dark/20 hover:bg-white/20 transition-colors',
+            size === 'base' ? 'px-4 py-2 text-sm' : 'px-2 py-1 text-xs'
+          )}
+        >
+          <Icon className="w-4 h-4 text-brand-accent-dark" />
+          {label}
+        </button>
+      ))}
+    </div>
+  )
+
+  // ── Header ─────────────────────────────────────────────────────────────────
+  const header = (
+    <div
+      className={cn(
+        'flex items-center justify-between gap-3 px-4 py-3 bg-gradient-to-r from-[rgba(0,217,255,0.2)] to-[rgba(0,168,181,0.2)] border-b border-[#00D9FF4D] shrink-0',
+        !embedded && 'rounded-t-xl'
+      )}
+    >
+      <div className="flex items-center gap-3 min-w-0">
+        <Sparkles className="w-5 h-5 text-brand-accent-dark shrink-0" />
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <h2 className="font-semibold text-white text-base">AI Legal Assistant</h2>
+            {embedded && <div className="w-2 h-2 rounded-full bg-green-400" />}
+          </div>
+          <p className="text-xs text-brand-accent-dark/60 truncate uppercase">{context}</p>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-1 shrink-0">
+        {/* New chat */}
+        <button
+          type="button"
+          onClick={handleNewChat}
+          className="p-2 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+          aria-label="New chat"
+          title="New chat"
+        >
+          <Plus className="w-4 h-4" />
+        </button>
+
+        {/* Conversation history dropdown */}
+        <div className="relative" ref={historyRef}>
+          <button
+            type="button"
+            onClick={() => setShowHistory((v) => !v)}
+            className="p-2 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-colors flex items-center gap-1"
+            aria-label="Chat history"
+            title="Chat history"
+          >
+            <History className="w-4 h-4" />
+            {conversationsList.length > 0 && (
+              <ChevronDown className={cn('w-3 h-3 transition-transform', showHistory && 'rotate-180')} />
+            )}
+          </button>
+
+          {showHistory && conversationsList.length > 0 && (
+            <div className="absolute right-0 top-full mt-1 w-64 bg-[#0A1628] border border-white/10 rounded-xl shadow-xl z-50 overflow-hidden">
+              <div className="px-3 py-2 text-[10px] text-white/40 uppercase font-semibold border-b border-white/10">
+                Recent Conversations
+              </div>
+              <div className="max-h-60 overflow-y-auto">
+                {conversationsList.map((conv) => (
+                  <button
+                    key={conv.id}
+                    type="button"
+                    onClick={() => handleSelectConversation(conv.id)}
+                    className={cn(
+                      'w-full text-left px-3 py-2.5 text-sm hover:bg-white/10 transition-colors truncate',
+                      conv.id === conversationId
+                        ? 'text-brand-accent-dark bg-white/5'
+                        : 'text-white/70'
+                    )}
+                  >
+                    {conv.title || 'Untitled Chat'}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {!embedded && (
+          <>
+            <button
+              type="button"
+              onClick={onExpandToggle}
+              className="p-2 rounded-lg text-white/80 hover:text-white hover:bg-white/10 transition-colors"
+              aria-label={isExpanded ? 'Minimize' : 'Expand'}
+            >
+              {isExpanded ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-2 rounded-lg text-white/80 hover:text-white hover:bg-white/10 transition-colors"
+              aria-label="Close"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  )
+
+  // ── Main content ───────────────────────────────────────────────────────────
   const chatContent = (
     <div
       className={cn(
@@ -221,151 +424,75 @@ export function AILegalAssistantChat({
         embedded && 'w-full h-full min-h-0 flex-1'
       )}
     >
-      <div
-        className={cn(
-          'flex items-center justify-between gap-3 px-6 py-4 bg-gradient-to-r from-[rgba(0,217,255,0.2)] to-[rgba(0,168,181,0.2)] border-b border-[#00D9FF4D] shrink-0',
-          !embedded && 'rounded-t-xl'
-        )}
-      >
-        <div className="flex items-center gap-3 min-w-0">
-          <Sparkles className="w-5 h-5 text-brand-accent-dark" />
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <h2 className="font-semibold text-white text-base">AI Legal Assistant</h2>
-              {embedded && (
-                <div className="w-2 h-2 rounded-full bg-green-400" />
-              )}
-            </div>
-            <p className="text-xs text-brand-accent-dark/60 truncate uppercase">{context}</p>
-          </div>
+      {header}
+
+      {activeMode === 'summarize' ? (
+        <div className="flex-1 flex flex-col overflow-hidden min-h-0">
+          <SummarizePanel onClose={handlePanelClose} />
         </div>
-        {!embedded && (
-          <div className="flex items-center gap-0.5 shrink-0">
-            <button
-              type="button"
-              onClick={onExpandToggle}
-              className="p-2 rounded-lg text-white/80 hover:text-white hover:bg-white/10 transition-colors"
-              aria-label={isExpanded ? 'Minimize' : 'Expand'}
+      ) : activeMode === 'check-compliance' ? (
+        <div className="flex-1 flex flex-col overflow-hidden min-h-0">
+          <CheckCompliancePanel onClose={handlePanelClose} />
+        </div>
+      ) : (
+        <>
+          <div className="flex-1 flex flex-col overflow-hidden bg-background/50">
+            <div
+              ref={scrollRef}
+              className={cn('flex-1 overflow-y-auto', embedded ? 'p-6' : 'p-4')}
             >
-              {isExpanded ? (
-                <Minimize2 className="w-5 h-5" />
+              {embedded ? (
+                <div className="flex-1 flex flex-col gap-4 min-w-0">{messageList}</div>
               ) : (
-                <Maximize2 className="w-5 h-5" />
+                messageList
               )}
-            </button>
-            <button
-              type="button"
-              onClick={onClose}
-              className="p-2 rounded-lg text-white/80 hover:text-white hover:bg-white/10 transition-colors"
-              aria-label="Close"
+            </div>
+
+            <div
+              className={cn(
+                'border-t border-brand-accent-dark/20 shrink-0',
+                embedded ? '' : ''
+              )}
             >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-        )}
-      </div>
-
-      <div className="flex-1 flex flex-col overflow-hidden bg-background/50">
-        <div
-          ref={scrollRef}
-          className={cn(
-            'flex-1 overflow-y-auto',
-            embedded ? 'p-6' : 'p-4'
-          )}
-        >
-          {embedded ? (
-            <div className="flex-1 flex flex-col gap-4 min-w-0">
-              {messageList}
-            </div>
-          ) : (
-            messageList
-          )}
-        </div>
-
-        {embedded && (
-          <div className="px-6 py-4 border-t border-brand-accent-dark/20 shrink-0">
-            <div className="flex flex-wrap gap-2">
-              {SUGGESTED_ACTIONS.map(({ label, icon: Icon }) => (
-                <button
-                  key={label}
-                  type="button"
-                  onClick={() => handleSuggestedAction(label)}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 text-brand-accent-dark border border-brand-accent-dark/20 text-sm hover:bg-white/20 transition-colors"
-                >
-                  <Icon className="w-4 h-4 text-brand-accent-dark" />
-                  {label}
-                </button>
-              ))}
+              {suggestedActionsBar(embedded ? 'base' : 'sm')}
             </div>
           </div>
-        )}
 
-        {!embedded && (
-          <div className="px-4 py-2 border-t border-brand-accent-dark/20 shrink-0">
-            <div className="flex flex-wrap gap-2">
-              {SUGGESTED_ACTIONS.map(({ label, icon: Icon }) => (
-                <button
-                  key={label}
-                  type="button"
-                  onClick={() => handleSuggestedAction(label)}
-                  className="inline-flex items-center gap-2 px-2 py-1 rounded-xl bg-white/10 text-brand-accent-dark border border-brand-accent-dark/20 text-xs hover:bg-white/20 transition-colors"
-                >
-                  <Icon className="w-4 h-4 text-brand-accent-dark" />
-                  {label}
-                </button>
-              ))}
+          <div className={cn('border-t border-border bg-card shrink-0', embedded ? 'p-4' : 'p-3')}>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                aria-label="Attach file"
+                className="text-brand-accent-dark border border-brand-accent-dark/20 rounded-xl p-2 hover:bg-brand-accent-dark/20 transition-colors"
+              >
+                <Paperclip className="w-5 h-5" />
+              </button>
+              <Input
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
+                placeholder="Ask me anything…"
+                className="flex-1 rounded-xl border-border bg-background"
+              />
+              <Button
+                type="button"
+                size="icon"
+                className="shrink-0"
+                aria-label="Send"
+                onClick={handleSend}
+                disabled={!input.trim() || isBusy}
+              >
+                <Send className="w-5 h-5 text-white" />
+              </Button>
             </div>
           </div>
-        )}
-      </div>
-
-      <div
-        className={cn(
-          'border-t border-border bg-card shrink-0',
-          embedded ? 'p-4' : 'p-3'
-        )}
-      >
-        <div className="flex gap-2">
-          <button
-            type="button"
-            aria-label="Attach file"
-            className="text-brand-accent-dark border border-brand-accent-dark/20 rounded-xl p-2 hover:bg-brand-accent-dark/20 transition-colors"
-          >
-            <Paperclip className="w-5 h-5" />
-          </button>
-          <Input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
-            placeholder="Ask me anything..."
-            className="flex-1 rounded-xl border-border bg-background"
-          />
-          <Button
-            type="button"
-            size="icon"
-            className="shrink-0"
-            aria-label="Send"
-            onClick={handleSend}
-            disabled={
-              !input.trim() ||
-              sendMutation.isPending ||
-              sendMessageMutation.isPending ||
-              createConversationMutation.isPending
-            }
-          >
-            <Send className="w-5 h-5 text-white" />
-          </Button>
-        </div>
-      </div>
+        </>
+      )}
     </div>
   )
 
   if (embedded) {
-    return (
-      <div className="flex flex-col w-full h-full min-h-0">
-        {chatContent}
-      </div>
-    )
+    return <div className="flex flex-col w-full h-full min-h-0">{chatContent}</div>
   }
 
   if (isExpanded) {

@@ -51,3 +51,52 @@ export const getLawPolicy = async (
   )
   return response.data
 }
+
+/**
+ * Create a new law/policy entry
+ */
+export const createLawPolicy = async (
+  payload: {
+    title: string
+    description: string
+    authority: string
+    category: string
+    status?: string
+    publicationDate?: string
+    effectiveDate?: string
+    content?: string
+  }
+): Promise<ApiSuccessResponse<LawPolicyDetail>> => {
+  const response = await apiClient.post<ApiSuccessResponse<LawPolicyDetail>>(
+    '/laws-policies',
+    payload
+  )
+  return response.data
+}
+
+/**
+ * Upload a law/policy document to the AI backend for processing.
+ * This proxies through the Node backend to the Python ai_backend.
+ */
+export const uploadLawPolicyDocument = async (
+  file: File,
+  options?: { entityType?: string; entityId?: string }
+): Promise<unknown> => {
+  const formData = new FormData()
+  formData.append('file', file)
+
+  const params = new URLSearchParams()
+  if (options?.entityType) params.append('entityType', options.entityType)
+  if (options?.entityId) params.append('entityId', options.entityId)
+
+  const queryString = params.toString()
+  const url = `/ai/docs/upsert${queryString ? `?${queryString}` : ''}`
+
+  const response = await apiClient.post(url, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  })
+
+  return response.data
+}

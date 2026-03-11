@@ -3,7 +3,7 @@
  * React Query hooks for laws and policies (read-only)
  */
 
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import * as lawPolicyService from '@/services/law-policy.service'
 import type {
   LawPolicyListParams,
@@ -53,5 +53,20 @@ export const useLawPolicy = (id: string) => {
     queryFn: () => lawPolicyService.getLawPolicy(id),
     enabled: !!id,
     staleTime: 10 * 60 * 1000, // 10 minutes
+  })
+}
+
+/**
+ * Create law/policy
+ */
+export const useCreateLawPolicy = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: lawPolicyService.createLawPolicy,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: lawPolicyKeys.lists() })
+      queryClient.invalidateQueries({ queryKey: lawPolicyKeys.stats() })
+    },
   })
 }

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Eye, Pencil, Plus, Sparkles, Calendar, Users, CircleCheckBig } from 'lucide-react'
+import { Eye, Pencil, Plus, Sparkles, Calendar, Users, CircleCheckBig, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { CreateAgreementDialog } from '@/components/CreateAgreementDialog'
@@ -36,7 +36,7 @@ const summaryCardConfig = [
   { key: 'terminated' as const, label: 'Terminated', color: 'text-red-400' },
 ]
 
-function agreementToViewData(a: Agreement): ViewAgreementDialogData {
+function agreementToViewData(a: Agreement & { content?: string; purposeAndObjectives?: string }): ViewAgreementDialogData {
   return {
     id: a.id,
     title: a.title,
@@ -44,12 +44,15 @@ function agreementToViewData(a: Agreement): ViewAgreementDialogData {
     type: a.type,
     date: a.date,
     status: AGREEMENT_STATUS_LABELS[a.status],
+    content: a.content,
+    purposeAndObjectives: a.purposeAndObjectives,
   }
 }
 
 export function Agreements() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [viewAgreement, setViewAgreement] = useState<Agreement | null>(null)
+  const [generatingId, setGeneratingId] = useState<string | null>(null)
   const isAdmin = useIsAdmin()
 
   const { data: listData, isLoading, error } = useAgreements()
@@ -60,6 +63,7 @@ export function Agreements() {
   const stats = deriveAgreementStats(items)
 
   const handleGenerateDraft = (data: CreateAgreementFormData) => {
+    setCreateDialogOpen(false)
     createMutation.mutate(
       {
         title: data.title,
@@ -74,20 +78,11 @@ export function Agreements() {
         onSuccess: (res) => {
           const id = res.data?.id
           if (id) {
-            generateDraftMutation.mutate({
-              id,
-              data: {
-                title: data.title,
-                parties: data.parties,
-                type: data.type,
-                purposeAndObjectives: data.purposeAndObjectives,
-                status: data.status,
-                content: data.content,
-                date: data.date,
-              },
+            setGeneratingId(id)
+            generateDraftMutation.mutate(id, {
+              onSettled: () => setGeneratingId(null),
             })
           }
-          setCreateDialogOpen(false)
         },
       }
     )
@@ -166,15 +161,20 @@ export function Agreements() {
                       <h4 className="text-lg font-semibold text-white leading-tight pr-2">
                         {agreement.title}
                       </h4>
-                      {agreement.aiSuggestions != null && agreement.aiSuggestions > 0 && (
+                      {generatingId === agreement.id ? (
+                        <div className="flex items-center gap-1 shrink-0 text-brand-accent-dark" title="Generating AI draft…">
+                          <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+                          <span className="text-xs">Generating…</span>
+                        </div>
+                      ) : agreement.aiSuggestions != null && agreement.aiSuggestions > 0 ? (
                         <div
                           className="flex items-center gap-1 shrink-0 text-green-500"
-                          title={`${agreement.aiSuggestions} AI suggestion(s)`}
+                          title={`${agreement.aiSuggestions} AI clause(s)`}
                         >
                           <CircleCheckBig className="w-4 h-4 shrink-0" />
-                          <span className="text-sm font-medium">{agreement.aiSuggestions}%</span>
+                          <span className="text-xs font-medium">AI Draft Ready</span>
                         </div>
-                      )}
+                      ) : null}
                     </div>
 
                     <p className="text-sm text-brand-muted-text-dark mb-4">

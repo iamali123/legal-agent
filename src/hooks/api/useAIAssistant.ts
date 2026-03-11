@@ -97,6 +97,33 @@ export const useSendMessage = () => {
 }
 
 /**
+ * Send message with streaming response (token-by-token)
+ */
+export const useSendMessageStream = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({
+      conversationId,
+      data,
+      onToken,
+    }: {
+      conversationId: string
+      data: SendMessageRequest
+      onToken: (token: string) => void
+    }) => aiAssistantService.sendMessageStream(conversationId, data, onToken),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: aiAssistantKeys.conversation(variables.conversationId),
+      })
+      queryClient.invalidateQueries({
+        queryKey: aiAssistantKeys.chat(variables.conversationId),
+      })
+    },
+  })
+}
+
+/**
  * Send chat message mutation (legacy - maintained for backward compatibility)
  * @deprecated Use useCreateConversation + useSendMessage instead
  */
@@ -147,6 +174,26 @@ export const useAnalyzeDocument = () => {
   return useMutation({
     mutationFn: (data: AnalyzeDocumentRequest) =>
       aiAssistantService.analyzeDocument(data),
+  })
+}
+
+/**
+ * Inject a message into a conversation (for panel results)
+ */
+export const useInjectMessage = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ conversationId, content }: { conversationId: string; content: string }) =>
+      aiAssistantService.injectMessage(conversationId, content),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: aiAssistantKeys.conversation(variables.conversationId),
+      })
+      queryClient.invalidateQueries({
+        queryKey: aiAssistantKeys.chat(variables.conversationId),
+      })
+    },
   })
 }
 

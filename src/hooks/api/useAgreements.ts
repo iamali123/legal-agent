@@ -107,16 +107,17 @@ export const useDeleteAgreement = () => {
 }
 
 /**
- * Generate AI draft mutation
+ * Generate AI draft mutation.
+ * Calls POST /agreements/:id/generate-draft — Python generates the draft,
+ * Node saves it to agreement.content, returns updated agreement + draft text.
  */
 export const useGenerateAgreementDraft = () => {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: CreateAgreementRequest }) =>
-      agreementService.generateAgreementDraft(id, data),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: agreementKeys.detail(variables.id) })
+    mutationFn: (id: string) => agreementService.generateAgreementDraft(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: agreementKeys.lists() })
     },
   })
 }

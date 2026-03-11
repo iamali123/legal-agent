@@ -99,6 +99,7 @@ export const getContracts = async (
       durationMonths: item.durationMonths ?? null,
       status: item.status as Contract['status'],
       aiFlags: item.aiFlags ?? null,
+      content: (item as { content?: string }).content ?? undefined,
       createdAt: item.createdAt,
       lastUpdated: item.updatedAt || item.createdAt,
     }))
@@ -151,6 +152,7 @@ export const getContracts = async (
       durationMonths: item.durationMonths ?? null,
       status: item.status as Contract['status'],
       aiFlags: item.aiFlags ?? null,
+      content: (item as { content?: string }).content ?? undefined,
       createdAt: item.createdAt,
       lastUpdated: item.updatedAt || item.createdAt,
     }))
@@ -236,14 +238,16 @@ export const createContract = async (
 
 /**
  * Update contract
- * @deprecated Backend doesn't implement PUT endpoint yet
  */
 export const updateContract = async (
   id: string,
   data: UpdateContractRequest
 ): Promise<ApiSuccessResponse<Contract>> => {
-  // TODO: Backend doesn't have PUT endpoint yet
-  throw new Error('Update contract endpoint not implemented in backend')
+  const response = await apiClient.put<ApiSuccessResponse<Contract>>(
+    `/contracts/${id}`,
+    data
+  )
+  return response.data
 }
 
 /**
@@ -259,29 +263,13 @@ export const deleteContract = async (
 
 /**
  * Generate AI draft for contract
- * Uses the AI jobs endpoint instead of dedicated generate-draft endpoint
+ * Calls the dedicated generate-draft endpoint which triggers the Python AI backend.
  */
 export const generateContractDraft = async (
-  id: string,
-  data: CreateContractRequest
-): Promise<ApiSuccessResponse<{ jobId: string; status: string; estimatedTime: number; contractId: string }>> => {
-  // Import AI service to use createAIJob
-  const { createAIJob } = await import('./ai-assistant.service')
-  const job = await createAIJob({
-    jobType: 'generate_draft',
-    entityType: 'Contract',
-    entityId: id,
-    input: data,
-  })
-  
-  return {
-    success: true,
-    message: 'AI draft generation started',
-    data: {
-      jobId: job.data.id,
-      status: job.data.status,
-      estimatedTime: job.data.estimatedTime || 30,
-      contractId: id,
-    },
-  }
+  id: string
+): Promise<ApiSuccessResponse<{ draft_text: string; key_clauses: string[]; summary: string }>> => {
+  const response = await apiClient.post<ApiSuccessResponse<{ draft_text: string; key_clauses: string[]; summary: string }>>(
+    `/contracts/${id}/generate-draft`
+  )
+  return response.data
 }

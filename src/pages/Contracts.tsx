@@ -50,12 +50,16 @@ function contractToViewData(c: Contract): ViewContractDialogData {
     type: c.type,
     value: c.value,
     status: CONTRACT_STATUS_LABELS[c.status],
+    startDate: c.startDate,
+    endDate: c.endDate,
+    content: c.content,
   }
 }
 
 export function Contracts() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [viewContract, setViewContract] = useState<Contract | null>(null)
+  const [generatingId, setGeneratingId] = useState<string | null>(null)
   const isAdmin = useIsAdmin()
 
   const { data: listData, isLoading, error } = useContracts()
@@ -98,13 +102,13 @@ export function Contracts() {
     createMutation.mutate(createRequest, {
       onSuccess: (res) => {
         const id = res.data?.id
+        setCreateDialogOpen(false)
         if (id) {
-          generateDraftMutation.mutate({
-            id,
-            data: createRequest,
+          setGeneratingId(id)
+          generateDraftMutation.mutate(id, {
+            onSettled: () => setGeneratingId(null),
           })
         }
-        setCreateDialogOpen(false)
       },
     })
   }
@@ -217,6 +221,19 @@ export function Contracts() {
 
                     <hr className="border-0 h-px bg-brand-accent-dark/20 mb-4" />
 
+                    {generatingId === contract.id && (
+                      <div className="mb-3 flex items-center gap-2 text-xs text-brand-accent-dark animate-pulse">
+                        <Sparkles className="w-3.5 h-3.5" />
+                        Generating AI draft…
+                      </div>
+                    )}
+                    {contract.content && generatingId !== contract.id && (
+                      <div className="mb-3 flex items-center gap-2 text-xs text-emerald-400">
+                        <Sparkles className="w-3.5 h-3.5" />
+                        AI Draft Ready
+                      </div>
+                    )}
+
                     <div className="flex items-center justify-between">
                       <span
                         className={cn(
@@ -245,22 +262,13 @@ export function Contracts() {
                           <Eye className="w-5 h-5" />
                         </button>
                         {isAdmin && (
-                          <>
-                            <button
-                              type="button"
-                              className="text-brand-muted-text-dark hover:text-brand-accent-dark/80 transition-colors"
-                              aria-label="Edit"
-                            >
-                              <Pencil className="w-5 h-5" />
-                            </button>
-                            <button
-                              type="button"
-                              className="text-brand-accent-dark hover:text-brand-accent-dark/80 transition-colors"
-                              aria-label="AI details"
-                            >
-                              <Sparkles className="w-5 h-5" />
-                            </button>
-                          </>
+                          <button
+                            type="button"
+                            className="text-brand-muted-text-dark hover:text-brand-accent-dark/80 transition-colors"
+                            aria-label="Edit"
+                          >
+                            <Pencil className="w-5 h-5" />
+                          </button>
                         )}
                       </div>
                     </div>

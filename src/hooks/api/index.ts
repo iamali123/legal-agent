@@ -24,6 +24,9 @@ export * from './useApprovals'
 // Laws & Policies
 export * from './useLawPolicies'
 
+// AI Documents
+export * from './useAIDocs'
+
 // AI Assistant
 export * from './useAIAssistant'
 
@@ -32,3 +35,6 @@ export * from './useFiles'
 
 // User
 export * from './useUser'
+
+// Compliance
+export * from './useCompliance'

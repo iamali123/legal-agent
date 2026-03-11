@@ -20,6 +20,8 @@ export interface Agreement {
   date: string
   status: AgreementStatus
   aiSuggestions?: number | null
+  content?: string | null
+  purposeAndObjectives?: string | null
   createdAt: string
   lastUpdated: string
   createdBy?: string

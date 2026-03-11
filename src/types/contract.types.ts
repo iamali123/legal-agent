@@ -25,6 +25,7 @@ export interface Contract {
   durationMonths?: number | null
   status: ContractStatus
   aiFlags: number | null
+  content?: string
   createdAt: string
   lastUpdated: string
 }

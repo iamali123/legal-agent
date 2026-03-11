@@ -70,6 +70,8 @@ export const getAgreements = async (
       createdBy?: string
       creator?: { name: string }
       aiSuggestions?: number | null
+      content?: string | null
+      purposeAndObjectives?: string | null
       deletedAt?: string | null
     }) => ({
       id: item.id,
@@ -79,6 +81,8 @@ export const getAgreements = async (
       date: item.date,
       status: item.status as Agreement['status'],
       aiSuggestions: item.aiSuggestions ?? null,
+      content: item.content ?? null,
+      purposeAndObjectives: item.purposeAndObjectives ?? null,
       createdAt: item.createdAt,
       lastUpdated: item.updatedAt || item.createdAt,
       createdBy: item.createdBy,
@@ -115,6 +119,8 @@ export const getAgreements = async (
       createdBy?: string
       creator?: { name: string }
       aiSuggestions?: number | null
+      content?: string | null
+      purposeAndObjectives?: string | null
       deletedAt?: string | null
     }) => ({
       id: item.id,
@@ -124,6 +130,8 @@ export const getAgreements = async (
       date: item.date,
       status: item.status as Agreement['status'],
       aiSuggestions: item.aiSuggestions ?? null,
+      content: item.content ?? null,
+      purposeAndObjectives: item.purposeAndObjectives ?? null,
       createdAt: item.createdAt,
       lastUpdated: item.updatedAt || item.createdAt,
       createdBy: item.createdBy,
@@ -203,14 +211,16 @@ export const createAgreement = async (
 
 /**
  * Update agreement
- * @deprecated Backend doesn't implement PUT endpoint yet
  */
 export const updateAgreement = async (
   id: string,
   data: UpdateAgreementRequest
 ): Promise<ApiSuccessResponse<Agreement>> => {
-  // TODO: Backend doesn't have PUT endpoint yet
-  throw new Error('Update agreement endpoint not implemented in backend')
+  const response = await apiClient.put<ApiSuccessResponse<Agreement>>(
+    `/agreements/${id}`,
+    data
+  )
+  return response.data
 }
 
 /**
@@ -218,37 +228,28 @@ export const updateAgreement = async (
  * @deprecated Backend doesn't implement DELETE endpoint yet
  */
 export const deleteAgreement = async (
-  id: string
+  _id: string
 ): Promise<ApiSuccessResponse<null>> => {
-  // TODO: Backend doesn't have DELETE endpoint yet
   throw new Error('Delete agreement endpoint not implemented in backend')
 }
 
+export interface GenerateDraftResult {
+  agreement: Agreement
+  draft_text: string
+  key_clauses: string[]
+  summary: string
+}
+
 /**
- * Generate AI draft for agreement
- * Uses the AI jobs endpoint instead of dedicated generate-draft endpoint
+ * Generate AI draft for an existing agreement.
+ * Calls POST /agreements/:id/generate-draft which calls the Python AI backend,
+ * generates a draft, saves it to the agreement's content field, and returns the result.
  */
 export const generateAgreementDraft = async (
   id: string,
-  data: CreateAgreementRequest
-): Promise<ApiSuccessResponse<{ jobId: string; status: string; estimatedTime: number; agreementId: string }>> => {
-  // Import AI service to use createAIJob
-  const { createAIJob } = await import('./ai-assistant.service')
-  const job = await createAIJob({
-    jobType: 'generate_draft',
-    entityType: 'Agreement',
-    entityId: id,
-    input: data,
-  })
-  
-  return {
-    success: true,
-    message: 'AI draft generation started',
-    data: {
-      jobId: job.data.id,
-      status: job.data.status,
-      estimatedTime: job.data.estimatedTime || 30,
-      agreementId: id,
-    },
-  }
+): Promise<GenerateDraftResult> => {
+  const response = await apiClient.post<{ success: boolean; data: GenerateDraftResult }>(
+    `/agreements/${id}/generate-draft`
+  )
+  return response.data.data
 }
