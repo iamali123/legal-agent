@@ -238,7 +238,7 @@ export const sendChatMessage = async (
  */
 export const getChatHistory = async (
   conversationId: string,
-  params?: ChatHistoryParams
+  _params?: ChatHistoryParams
 ): Promise<ApiSuccessResponse<ChatHistory>> => {
   return getConversation(conversationId)
 }

@@ -16,6 +16,8 @@ import {
   useIsAdmin,
 } from '@/hooks/api'
 import type { Approval } from '@/types/approval.types'
+import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 
 function deriveApprovalStats(items: Approval[]) {
   const now = new Date().toISOString().slice(0, 10)
@@ -30,28 +32,28 @@ function deriveApprovalStats(items: Approval[]) {
 }
 
 const summaryCardConfig = [
-  { key: 'pending' as const, label: 'Pending Approvals', color: 'text-orange-400' },
-  { key: 'approvedToday' as const, label: 'Approved Today', color: 'text-green-400' },
-  { key: 'urgent' as const, label: 'Urgent', color: 'text-red-400' },
-  { key: 'inReview' as const, label: 'In Review', color: 'text-blue-400' },
+  { key: 'pending' as const, labelKey: 'approvals.pendingApprovals', color: 'text-orange-400' },
+  { key: 'approvedToday' as const, labelKey: 'approvals.approvedToday', color: 'text-green-400' },
+  { key: 'urgent' as const, labelKey: 'approvals.urgent', color: 'text-red-400' },
+  { key: 'inReview' as const, labelKey: 'approvals.inReview', color: 'text-blue-400' },
 ]
 
-function approvalToViewData(approval: Approval): ApprovalViewDialogData {
+function approvalToViewData(approval: Approval, t: TFunction): ApprovalViewDialogData {
   const statusLabel =
     approval.status === 'pending'
-      ? 'Pending'
+      ? t('approvals.pending')
       : approval.status === 'approved'
-      ? 'Approved'
+      ? t('approvals.approved')
       : approval.status === 'rejected'
-      ? 'Rejected'
-      : 'Changes Requested'
+      ? t('approvals.rejected')
+      : t('approvals.changesRequested')
   return {
     title: approval.title,
     type: approval.type,
     submittedBy: approval.submitter?.name ?? approval.assignee?.name ?? '—',
     date: approval.dueDate,
     priority: approval.priority,
-    aiSummary: `AI Recommendation: ${approval.aiRecommendation} (${approval.confidence}% confidence)`,
+    aiSummary: t('approvals.aiRecommendationLabel', { recommendation: approval.aiRecommendation, confidence: approval.confidence }),
     status: statusLabel,
     aiRecommendation: approval.aiRecommendation,
     confidence: approval.confidence,
@@ -59,6 +61,7 @@ function approvalToViewData(approval: Approval): ApprovalViewDialogData {
 }
 
 export function Approvals() {
+  const { t } = useTranslation()
   const [viewDialogOpen, setViewDialogOpen] = useState(false)
   const [viewData, setViewData] = useState<ApprovalViewDialogData | null>(null)
   const [selectedApprovalId, setSelectedApprovalId] = useState<string | null>(null)
@@ -73,7 +76,7 @@ export function Approvals() {
   const stats = deriveApprovalStats(items)
 
   const openView = (approval: Approval) => {
-    setViewData(approvalToViewData(approval))
+    setViewData(approvalToViewData(approval, t))
     setSelectedApprovalId(approval.id)
     setViewDialogOpen(true)
   }
@@ -114,20 +117,20 @@ export function Approvals() {
   return (
     <div className="min-h-screen">
       <PageHeader
-        title="Approvals"
-        subtitle="Review and approve pending items"
+        title={t('approvals.title')}
+        subtitle={t('approvals.subtitle')}
       />
       {/* Summary Cards */}
       <div className="px-8 pt-6 pb-4 ">
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {summaryCardConfig.map(({ key, label, color }) => (
+          {summaryCardConfig.map(({ key, labelKey, color }) => (
             <div
-              key={label}
+              key={labelKey}
               className="px-4 py-5 text-center bg-[#0A1628CC] rounded-xl border border-brand-accent-dark/30 overflow-hidden relative"
             >
               <CornerAccents />
               <p className="text-xs text-brand-accent-dark mb-2 uppercase tracking-wide">
-                {label}
+                {t(labelKey)}
               </p>
               <p className={cn('text-3xl font-bold', color)}>
                 {isLoading ? '—' : stats[key]}
@@ -143,19 +146,19 @@ export function Approvals() {
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-semibold text-brand-accent-dark">
-              Approval Queue
+              {t('approvals.approvalQueue')}
             </h2>
           </div>
 
           {error && (
-            <p className="text-red-400 text-sm py-4">Failed to load approvals. Please try again.</p>
+            <p className="text-red-400 text-sm py-4">{t('approvals.failedToLoad')}</p>
           )}
 
           <div className="grid grid-cols-1 gap-4">
             {isLoading ? (
-              <p className="text-brand-muted-text-dark py-8">Loading...</p>
+              <p className="text-brand-muted-text-dark py-8">{t('approvals.loading')}</p>
             ) : items.length === 0 ? (
-              <p className="text-brand-muted-text-dark py-8">No approvals found.</p>
+              <p className="text-brand-muted-text-dark py-8">{t('approvals.noneFound')}</p>
             ) : (
               items.map((approval) => (
                 <Card
@@ -198,12 +201,12 @@ export function Approvals() {
                         )}
                       >
                         {approval.status === 'pending'
-                          ? 'Pending'
+                          ? t('approvals.pending')
                           : approval.status === 'approved'
-                          ? 'Approved'
+                          ? t('approvals.approved')
                           : approval.status === 'rejected'
-                          ? 'Rejected'
-                          : 'Changes Requested'}
+                          ? t('approvals.rejected')
+                          : t('approvals.changesRequested')}
                       </span>
                     </div>
 
@@ -218,7 +221,7 @@ export function Approvals() {
                       </div>
                       <div className="flex items-center gap-2 text-sm text-brand-muted-text-dark">
                         <Calendar className="w-4 h-4 shrink-0" />
-                        <span>Due: {formatDate(approval.dueDate)}</span>
+                        <span>{t('approvals.due')} {formatDate(approval.dueDate)}</span>
                       </div>
                     </div>
 
@@ -230,7 +233,7 @@ export function Approvals() {
                           </div>
                           <div>
                             <p className="text-brand-accent-dark/60 uppercase tracking-wide">
-                              AI RECOMMENDATION
+                              {t('approvals.aiRecommendation')}
                             </p>
                             <p className="text-sm font-medium text-white">
                               {approval.aiRecommendation}
@@ -239,7 +242,7 @@ export function Approvals() {
                         </div>
                         <div className="text-right">
                           <p className="text-base text-brand-accent-dark/60 uppercase tracking-wide">
-                            CONFIDENCE
+                            {t('approvals.confidence')}
                           </p>
                           <p className="text-lg font-bold text-[#00BFFF]">
                             {approval.confidence}%
@@ -263,7 +266,7 @@ export function Approvals() {
                               onClick={() => approveMutation.mutate({ id: approval.id, data: undefined })}
                               disabled={approveMutation.isPending}
                               className="w-8 h-8 rounded-full border-2 border-green-500 flex items-center justify-center hover:bg-green-500/20 transition-colors"
-                              aria-label="Approve"
+                              aria-label={t('approvals.ariaApprove')}
                             >
                               <Check className="w-4 h-4 text-green-500" />
                             </button>
@@ -277,7 +280,7 @@ export function Approvals() {
                               }
                               disabled={rejectMutation.isPending}
                               className="w-8 h-8 rounded-full border-2 border-red-500 flex items-center justify-center hover:bg-red-500/20 transition-colors"
-                              aria-label="Reject"
+                              aria-label={t('approvals.ariaReject')}
                             >
                               <X className="w-4 h-4 text-red-500" />
                             </button>
@@ -287,10 +290,10 @@ export function Approvals() {
                           type="button"
                           onClick={() => openView(approval)}
                           className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-colors"
-                          aria-label="Review"
+                          aria-label={t('approvals.review')}
                         >
                           <Eye className="w-4 h-4" />
-                          <span className="text-sm">Review</span>
+                          <span className="text-sm">{t('approvals.review')}</span>
                         </button>
                       </div>
                     )}

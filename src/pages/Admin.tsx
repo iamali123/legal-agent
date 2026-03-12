@@ -2,13 +2,14 @@ import { useState } from 'react'
 import { Plus, ShieldAlert } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { PageHeader } from '@/components/layout/PageHeader'
-import { CornerAccents } from '@/components/CornerAccents'
 import { CreateUserDialog } from '@/components/CreateUserDialog'
 import { cn, formatDate } from '@/lib/utils'
 import { useUsers, useCreateUser, useIsAdmin } from '@/hooks/api'
 import type { CreateUserRequest } from '@/types/api.types'
+import { useTranslation } from 'react-i18next'
 
 export function Admin() {
+  const { t } = useTranslation()
   const isAdmin = useIsAdmin()
   const [addUserOpen, setAddUserOpen] = useState(false)
 
@@ -26,13 +27,13 @@ export function Admin() {
   if (!isAdmin) {
     return (
       <div className="min-h-screen">
-        <PageHeader title="Admin" subtitle="User management" />
+        <PageHeader title={t('admin.title')} subtitle={t('admin.userManagement')} />
         <div className="px-8 py-12 max-w-2xl mx-auto text-center">
           <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-8">
             <ShieldAlert className="w-12 h-12 text-red-500 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold text-white mb-2">Access denied</h2>
+            <h2 className="text-xl font-semibold text-white mb-2">{t('admin.accessDenied')}</h2>
             <p className="text-brand-muted-text-dark">
-              Only users with the Admin role can access this page.
+              {t('admin.accessDeniedMessage')}
             </p>
           </div>
         </div>
@@ -43,21 +44,21 @@ export function Admin() {
   return (
     <div className="min-h-screen">
       <PageHeader
-        title="Admin"
-        subtitle="Manage users and permissions"
+        title={t('admin.title')}
+        subtitle={t('admin.subtitle')}
       />
       <div className="px-8 pt-4 pb-6">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-semibold text-brand-accent-dark">
-              Users
+              {t('admin.users')}
             </h2>
             <Button
               className="bg-brand-accent-dark hover:bg-brand-accent-dark/90"
               onClick={() => setAddUserOpen(true)}
             >
               <Plus className="w-4 h-4 mr-2" />
-              Add User
+              {t('admin.addUser')}
             </Button>
           </div>
 
@@ -69,7 +70,7 @@ export function Admin() {
           />
 
           {error && (
-            <p className="text-red-400 text-sm py-4">Failed to load users. Please try again.</p>
+            <p className="text-red-400 text-sm py-4">{t('admin.failedToLoad')}</p>
           )}
 
           <div className="border border-brand-accent-dark/30 rounded-xl overflow-hidden bg-white/5">
@@ -78,22 +79,22 @@ export function Admin() {
                 <thead>
                   <tr className="border-b border-brand-accent-dark/30 bg-white/5">
                     <th className="px-6 py-4 text-left text-xs font-medium text-brand-accent-dark uppercase tracking-wider">
-                      Name
+                      {t('admin.tableName')}
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-medium text-brand-accent-dark uppercase tracking-wider">
-                      Email
+                      {t('admin.tableEmail')}
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-medium text-brand-accent-dark uppercase tracking-wider">
-                      Role
+                      {t('admin.tableRole')}
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-medium text-brand-accent-dark uppercase tracking-wider">
-                      Department
+                      {t('admin.tableDepartment')}
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-medium text-brand-accent-dark uppercase tracking-wider">
-                      Last login
+                      {t('admin.tableLastLogin')}
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-medium text-brand-accent-dark uppercase tracking-wider">
-                      Created
+                      {t('admin.tableCreated')}
                     </th>
                   </tr>
                 </thead>
@@ -101,13 +102,13 @@ export function Admin() {
                   {isLoading ? (
                     <tr>
                       <td colSpan={6} className="px-6 py-8 text-center text-brand-muted-text-dark">
-                        Loading...
+                        {t('admin.loading')}
                       </td>
                     </tr>
                   ) : users.length === 0 ? (
                     <tr>
                       <td colSpan={6} className="px-6 py-8 text-center text-brand-muted-text-dark">
-                        No users found.
+                        {t('admin.noUsersFound')}
                       </td>
                     </tr>
                   ) : (

@@ -5,20 +5,21 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
 import type { AgreementStatus, AgreementType } from '@/types/agreement.types'
+import { useTranslation } from 'react-i18next'
 
-const AGREEMENT_TYPE_OPTIONS: AgreementType[] = [
-  'Memorandum of Understanding',
-  'NDA',
-  'SLA',
-  'Joint Venture',
-  'Partnership',
-  'Other',
+const AGREEMENT_TYPE_OPTIONS: { value: AgreementType; labelKey: string }[] = [
+  { value: 'Memorandum of Understanding', labelKey: 'createAgreement.mou' },
+  { value: 'NDA', labelKey: 'createAgreement.nda' },
+  { value: 'SLA', labelKey: 'createAgreement.sla' },
+  { value: 'Joint Venture', labelKey: 'createAgreement.jointVenture' },
+  { value: 'Partnership', labelKey: 'createAgreement.partnership' },
+  { value: 'Other', labelKey: 'createAgreement.other' },
 ]
 
-const STATUS_OPTIONS: { value: AgreementStatus; label: string }[] = [
-  { value: 'draft', label: 'Draft' },
-  { value: 'active', label: 'Active' },
-  { value: 'terminated', label: 'Terminated' },
+const STATUS_OPTIONS: { value: AgreementStatus; labelKey: string }[] = [
+  { value: 'draft', labelKey: 'agreements.draft' },
+  { value: 'active', labelKey: 'agreements.active' },
+  { value: 'terminated', labelKey: 'agreements.terminated' },
 ]
 
 export interface CreateAgreementFormData {
@@ -42,6 +43,7 @@ export function CreateAgreementDialog({
   onClose,
   onGenerateDraft,
 }: CreateAgreementDialogProps) {
+  const { t } = useTranslation()
   const [title, setTitle] = useState('')
   const [type, setType] = useState<AgreementType | ''>('')
   const [partiesInput, setPartiesInput] = useState('') // Comma-separated input
@@ -103,10 +105,10 @@ export function CreateAgreementDialog({
               </div>
               <div>
                 <h2 className="text-xl font-semibold text-white">
-                  Create Agreement
+                  {t('createAgreement.title')}
                 </h2>
                 <p className="text-sm text-brand-muted-text-dark">
-                  Create a new agreement with AI assistance
+                  {t('createAgreement.subtitle')}
                 </p>
               </div>
             </div>
@@ -115,7 +117,7 @@ export function CreateAgreementDialog({
             type="button"
             onClick={handleClose}
             className="p-2 rounded-lg text-brand-muted-text-dark hover:text-foreground transition-colors shrink-0"
-            aria-label="Close"
+            aria-label={t('common.close')}
           >
             <X className="w-5 h-5" />
           </button>
@@ -125,20 +127,20 @@ export function CreateAgreementDialog({
         <div className="px-6 pb-4 space-y-3 flex-1 min-h-0 overflow-y-auto sidebar-nav-scroll">
           <div className="space-y-1">
             <Label htmlFor="agreement-title" className="text-brand-accent-dark">
-              Agreement Title
+              {t('createAgreement.agreementTitle')}
             </Label>
             <Input
               id="agreement-title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g., Partnership MOU"
+              placeholder={t('createAgreement.titlePlaceholder')}
               className="rounded-lg bg-[#0A162880] border border-brand-accent-dark/30"
             />
           </div>
 
           <div className="space-y-1">
             <Label htmlFor="agreement-type" className="text-brand-accent-dark">
-              Agreement Type
+              {t('createAgreement.agreementType')}
             </Label>
             <div className="relative">
               <select
@@ -150,10 +152,10 @@ export function CreateAgreementDialog({
                   'text-sm text-foreground'
                 )}
               >
-                <option value="">Select type</option>
+                <option value="">{t('createAgreement.selectType')}</option>
                 {AGREEMENT_TYPE_OPTIONS.map((opt) => (
-                  <option key={opt} value={opt}>
-                    {opt}
+                  <option key={opt.value} value={opt.value}>
+                    {t(opt.labelKey)}
                   </option>
                 ))}
               </select>
@@ -163,29 +165,29 @@ export function CreateAgreementDialog({
 
           <div className="space-y-1">
             <Label htmlFor="agreement-parties" className="text-brand-accent-dark">
-              Parties Involved (comma-separated)
+              {t('createAgreement.partiesInvolved')}
             </Label>
             <Input
               id="agreement-parties"
               value={partiesInput}
               onChange={(e) => setPartiesInput(e.target.value)}
-              placeholder="e.g., Ministry of Justice, Ministry of Interior"
+              placeholder={t('createAgreement.partiesPlaceholder')}
               className="rounded-lg bg-[#0A162880] border border-brand-accent-dark/30"
             />
             <p className="text-xs text-brand-muted-text-dark mt-1">
-              Separate multiple parties with commas
+              {t('createAgreement.partiesHint')}
             </p>
           </div>
 
           <div className="space-y-1">
             <Label htmlFor="agreement-purpose" className="text-brand-accent-dark">
-              Purpose & Objectives
+              {t('createAgreement.purposeObjectives')}
             </Label>
             <textarea
               id="agreement-purpose"
               value={purposeAndObjectives}
               onChange={(e) => setPurposeAndObjectives(e.target.value)}
-              placeholder="Describe the purpose and key objectives of this agreement..."
+              placeholder={t('createAgreement.purposePlaceholder')}
               rows={4}
               className={cn(
                 'flex w-full rounded-lg bg-[#0A162880] border border-brand-accent-dark/30 px-3 py-2',
@@ -197,7 +199,7 @@ export function CreateAgreementDialog({
 
           <div className="space-y-1">
             <Label htmlFor="agreement-status" className="text-brand-accent-dark">
-              Status
+              {t('createAgreement.status')}
             </Label>
             <div className="relative">
               <select
@@ -211,7 +213,7 @@ export function CreateAgreementDialog({
               >
                 {STATUS_OPTIONS.map((opt) => (
                   <option key={opt.value} value={opt.value}>
-                    {opt.label}
+                    {t(opt.labelKey)}
                   </option>
                 ))}
               </select>
@@ -221,13 +223,13 @@ export function CreateAgreementDialog({
 
           <div className="space-y-1">
             <Label htmlFor="agreement-content" className="text-brand-accent-dark">
-              Content
+              {t('createAgreement.content')}
             </Label>
             <textarea
               id="agreement-content"
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              placeholder="This Agreement is entered into by..."
+              placeholder={t('createAgreement.contentPlaceholder')}
               rows={6}
               className={cn(
                 'flex w-full rounded-lg bg-[#0A162880] border border-brand-accent-dark/30 px-3 py-2',
@@ -239,7 +241,7 @@ export function CreateAgreementDialog({
 
           <div className="space-y-1">
             <Label htmlFor="agreement-date" className="text-brand-accent-dark">
-              Date
+              {t('createAgreement.date')}
             </Label>
             <Input
               id="agreement-date"
@@ -254,11 +256,11 @@ export function CreateAgreementDialog({
         {/* Actions - Cancel (outline) + Generate Draft (gradient with Sparkles) */}
         <div className="grid grid-cols-2 gap-3 p-6 pt-2 shrink-0">
           <Button variant="outline" onClick={handleClose} className="bg-transparent">
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button onClick={handleGenerateDraft}>
             <Sparkles className="w-4 h-4 mr-2" />
-            Generate Draft
+            {t('createAgreement.generateDraft')}
           </Button>
         </div>
       </div>

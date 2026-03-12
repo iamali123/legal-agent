@@ -476,7 +476,7 @@ export function CheckCompliancePanel({ onClose }: Props) {
       <div className="flex items-center gap-3 px-6 py-4 bg-gradient-to-r from-[rgba(0,217,255,0.15)] to-[rgba(0,168,181,0.15)] border-b border-[#00D9FF4D] shrink-0">
         <button
           type="button"
-          onClick={onClose}
+          onClick={() => onClose()}
           className="p-1.5 rounded-lg text-white/60 hover:text-white hover:bg-white/10 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
@@ -1010,7 +1010,7 @@ export function CheckCompliancePanel({ onClose }: Props) {
             )}
 
             <Button
-              onClick={() => onClose(formatComplianceForChat(results, sessionData?.company_name))}
+              onClick={() => onClose(formatComplianceForChat(results, sessionData?.company_name ?? undefined))}
               className="mt-2 w-full flex items-center gap-2"
             >
               <MessageSquare className="w-4 h-4" />

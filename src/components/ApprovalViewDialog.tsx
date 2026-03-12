@@ -1,6 +1,5 @@
-import { Sparkles, X, Check, MessageSquare } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
+import { X, Check } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 export interface DocumentSection {
   label: string
@@ -20,14 +19,6 @@ export interface ApprovalViewDialogData {
   documentSections?: DocumentSection[]
 }
 
-const DEFAULT_SECTIONS: DocumentSection[] = [
-  { label: 'Section 1: Parties to the Agreement' },
-  { label: 'Section 2: Purpose and Scope' },
-  { label: 'Section 3: Terms and Conditions' },
-  { label: 'Payment Terms (Modified)', isNewOrModified: true },
-  { label: 'Section 4: Duration and Termination' },
-]
-
 interface ApprovalViewDialogProps {
   open: boolean
   data: ApprovalViewDialogData | null
@@ -45,11 +36,11 @@ export function ApprovalViewDialog({
   onReject,
   onApprove,
 }: ApprovalViewDialogProps) {
-  const sections = data?.documentSections ?? DEFAULT_SECTIONS
+  const { t } = useTranslation()
   const isOpen = open && !!data
 
   if (!isOpen) return null
-  
+
   // Extract confidence and recommendation from aiSummary if not provided directly
   const confidence = data?.confidence ?? 94
   const recommendation = data?.aiRecommendation ?? 'Approve'
@@ -76,7 +67,7 @@ export function ApprovalViewDialog({
               type="button"
               onClick={onClose}
               className="p-1 rounded-lg text-white hover:bg-white/10 transition-colors"
-              aria-label="Close"
+              aria-label={t('common.close')}
             >
               <X className="w-5 h-5" />
             </button>
@@ -85,19 +76,19 @@ export function ApprovalViewDialog({
           {/* Metadata cards - 2x2 grid */}
           <div className="grid grid-cols-2 gap-3">
             <div className="rounded-xl bg-[#0A162880] border border-brand-accent-dark/20 px-4 py-3">
-              <p className="text-xs text-brand-accent-dark uppercase tracking-wide mb-1">Type</p>
+              <p className="text-xs text-brand-accent-dark uppercase tracking-wide mb-1">{t('approvalView.type')}</p>
               <p className="text-sm font-medium text-white">{data.type}</p>
             </div>
             <div className="rounded-xl bg-[#0A162880] border border-brand-accent-dark/20 px-4 py-3">
-              <p className="text-xs text-brand-accent-dark uppercase tracking-wide mb-1">Status</p>
+              <p className="text-xs text-brand-accent-dark uppercase tracking-wide mb-1">{t('approvalView.status')}</p>
               <p className="text-sm font-medium text-white">{status}</p>
             </div>
             <div className="rounded-xl bg-[#0A162880] border border-brand-accent-dark/20 px-4 py-3">
-              <p className="text-xs text-brand-accent-dark uppercase tracking-wide mb-1">Requested By</p>
+              <p className="text-xs text-brand-accent-dark uppercase tracking-wide mb-1">{t('approvalView.requestedBy')}</p>
               <p className="text-sm font-medium text-white">{data.submittedBy}</p>
             </div>
             <div className="rounded-xl bg-[#0A162880] border border-brand-accent-dark/20 px-4 py-3">
-              <p className="text-xs text-brand-accent-dark uppercase tracking-wide mb-1">Due Date</p>
+              <p className="text-xs text-brand-accent-dark uppercase tracking-wide mb-1">{t('approvalView.dueDate')}</p>
               <p className="text-sm font-medium text-white">{data.date}</p>
             </div>
           </div>
@@ -107,9 +98,9 @@ export function ApprovalViewDialog({
         <div className="px-6 pb-4 flex-1 min-h-0 overflow-y-auto sidebar-nav-scroll">
           <div className="rounded-xl bg-[#0A162880] border border-brand-accent-dark/20 px-4 py-3">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-xs text-brand-accent-dark uppercase tracking-wide">AI Recommendation</p>
+              <p className="text-xs text-brand-accent-dark uppercase tracking-wide">{t('approvalView.aiRecommendation')}</p>
               <div className="text-right">
-                <p className="text-xs text-brand-accent-dark uppercase tracking-wide">CONFIDENCE</p>
+                <p className="text-xs text-brand-accent-dark uppercase tracking-wide">{t('approvalView.confidence')}</p>
                 <p className="text-base font-bold text-[#00BFFF]">{confidence}%</p>
               </div>
             </div>
@@ -125,7 +116,7 @@ export function ApprovalViewDialog({
                 type="button"
                 onClick={() => onApprove(data)}
                 className="w-10 h-10 rounded-full border-2 border-green-500 flex items-center justify-center hover:bg-green-500/20 transition-colors"
-                aria-label="Approve"
+                aria-label={t('approvalView.ariaApprove')}
               >
                 <Check className="w-5 h-5 text-green-500" />
               </button>
@@ -135,7 +126,7 @@ export function ApprovalViewDialog({
                 type="button"
                 onClick={() => onReject(data)}
                 className="w-10 h-10 rounded-full border-2 border-red-500 flex items-center justify-center hover:bg-red-500/20 transition-colors"
-                aria-label="Reject"
+                aria-label={t('approvalView.ariaReject')}
               >
                 <X className="w-5 h-5 text-red-500" />
               </button>

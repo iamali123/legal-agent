@@ -4,6 +4,7 @@ import { Button } from '../ui/button'
 import { Input } from '../ui/input'
 import { Filter, Search, X } from 'lucide-react'
 import { CornerAccents } from '../CornerAccents'
+import { useTranslation } from 'react-i18next'
 
 interface PageHeaderProps {
   /** Page name shown as the main heading */
@@ -12,7 +13,16 @@ interface PageHeaderProps {
   subtitle?: string
 }
 
+const FILTER_TAG_KEYS = [
+  'pageHeader.filterTagLegislations',
+  'pageHeader.filterTagLawsPolicy',
+  'pageHeader.filterTagContracts',
+  'pageHeader.filterTagAgreements',
+  'pageHeader.filterTagApprovals',
+] as const
+
 export function PageHeader({ title, subtitle }: PageHeaderProps) {
+  const { t } = useTranslation()
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false)
   const [statusFilter, setStatusFilter] = useState('')
   const [priorityFilter, setPriorityFilter] = useState('')
@@ -49,12 +59,12 @@ export function PageHeader({ title, subtitle }: PageHeaderProps) {
         )}
         {/* Filter Tags */}
         <div className="flex gap-2 justify-center flex-wrap my-4">
-            {['Legislations', 'Laws / Policy', 'Contracts', 'Agreements', 'Approvals'].map((tag) => (
+            {FILTER_TAG_KEYS.map((key) => (
               <button
-                key={tag}
+                key={key}
                 className="px-4 py-2 rounded-xl bg-white/10 border border-brand-accent-dark/30 hover:border-brand-accent-dark/50 text-white/70 text-sm hover:bg-brand-accent-dark/30 transition-colors"
               >
-                {tag}
+                {t(key)}
               </button>
             ))}
           </div>
@@ -63,18 +73,18 @@ export function PageHeader({ title, subtitle }: PageHeaderProps) {
         <div className="max-w-4xl mx-auto">
           <div className="flex gap-4 mb-4">
             <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-accent-dark" />
+              <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-accent-dark" />
               <Input
                 type="text"
-                placeholder="Search laws, policies, or regulations..."
-                className="pl-10 h-14 text-base rounded-xl bg-[#0A1628CC] border border-brand-accent-dark/30"
+                placeholder={t('pageHeader.searchPlaceholder')}
+                className="ltr:pl-10 rtl:pr-10 h-14 text-base rounded-xl bg-[#0A1628CC] border border-brand-accent-dark/30"
               />
               <button
                 onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                className="h-10 px-6 flex items-center gap-2 bg-brand-accent-dark/20 border border-brand-accent-dark/30 hover:border-brand-accent-dark/50 text-brand-accent-dark rounded-xl text-sm hover:bg-brand-accent-dark/30 transition-colors absolute right-2 top-1/2 -translate-y-1/2"
+                className="h-10 px-6 flex items-center gap-2 bg-brand-accent-dark/20 border border-brand-accent-dark/30 hover:border-brand-accent-dark/50 text-brand-accent-dark rounded-xl text-sm hover:bg-brand-accent-dark/30 transition-colors absolute ltr:right-2 rtl:left-2 top-1/2 -translate-y-1/2"
               >
                 <Filter className="w-4 h-4" />
-                Filters
+                {t('pageHeader.filters')}
               </button>
             </div>
           </div>
@@ -86,12 +96,12 @@ export function PageHeader({ title, subtitle }: PageHeaderProps) {
               {/* Header */}
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-lg font-semibold text-brand-accent-dark">
-                  Advanced Filters
+                  {t('pageHeader.advancedFilters')}
                 </h3>
                 <button
                   onClick={() => setShowAdvancedFilters(false)}
                   className="p-1 rounded-lg text-brand-muted-text-dark hover:text-brand-accent-dark hover:bg-white/5 transition-colors"
-                  aria-label="Close filters"
+                  aria-label={t('pageHeader.closeFilters')}
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -101,7 +111,7 @@ export function PageHeader({ title, subtitle }: PageHeaderProps) {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 <div>
                   <label className="block text-sm font-medium mb-2 text-left text-brand-accent-dark">
-                    Status
+                    {t('pageHeader.status')}
                   </label>
                   <Input
                     type="text"
@@ -112,7 +122,7 @@ export function PageHeader({ title, subtitle }: PageHeaderProps) {
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-2 text-left text-brand-accent-dark">
-                    Priority
+                    {t('pageHeader.priority')}
                   </label>
                   <Input
                     type="text"
@@ -133,16 +143,14 @@ export function PageHeader({ title, subtitle }: PageHeaderProps) {
                   }}
                   className="border-brand-accent-dark/30 bg-transparent"
                 >
-                  Clear All
+                  {t('pageHeader.clearAll')}
                 </Button>
                 <Button
                   onClick={() => {
-                    // Apply filters logic here
-                    console.log('Apply filters:', { statusFilter, priorityFilter })
                     setShowAdvancedFilters(false)
                   }}
                 >
-                  Apply Filters
+                  {t('pageHeader.applyFilters')}
                 </Button>
               </div>
             </div>

@@ -6,7 +6,6 @@
 import { apiClient } from '@/lib/api/client'
 import type {
   ApiSuccessResponse,
-  PaginatedResponse,
 } from '@/types/api.types'
 import type {
   DashboardStats,
@@ -61,7 +60,7 @@ export const getDashboardStats = async (): Promise<
  * Return empty array for now
  */
 export const getAIHighlights = async (
-  params?: AIHighlightsParams
+  _params?: AIHighlightsParams
 ): Promise<ApiSuccessResponse<{ highlights: AIHighlight[] }>> => {
   // TODO: Backend doesn't have this endpoint yet
   // Return empty highlights for now
@@ -78,7 +77,7 @@ export const getAIHighlights = async (
  * Return empty array for now
  */
 export const getRecentActivity = async (
-  params?: RecentActivityParams
+  _params?: RecentActivityParams
 ): Promise<ApiSuccessResponse<{ activities: Activity[] }>> => {
   // TODO: Backend doesn't have this endpoint yet
   // Return empty activities for now

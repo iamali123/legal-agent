@@ -15,11 +15,12 @@ import {
   useIsAdmin,
 } from '@/hooks/api'
 import type { Agreement, AgreementStatus } from '@/types/agreement.types'
+import { useTranslation } from 'react-i18next'
 
-const AGREEMENT_STATUS_LABELS: Record<AgreementStatus, string> = {
-  draft: 'Draft',
-  active: 'Active',
-  terminated: 'Terminated',
+const AGREEMENT_STATUS_KEYS: Record<AgreementStatus, string> = {
+  draft: 'agreements.draft',
+  active: 'agreements.active',
+  terminated: 'agreements.terminated',
 }
 
 function deriveAgreementStats(items: Agreement[]) {
@@ -31,25 +32,26 @@ function deriveAgreementStats(items: Agreement[]) {
 }
 
 const summaryCardConfig = [
-  { key: 'draft' as const, label: 'Draft', color: 'text-gray-400' },
-  { key: 'active' as const, label: 'Active', color: 'text-green-400' },
-  { key: 'terminated' as const, label: 'Terminated', color: 'text-red-400' },
+  { key: 'draft' as const, labelKey: 'agreements.draft', color: 'text-gray-400' },
+  { key: 'active' as const, labelKey: 'agreements.active', color: 'text-green-400' },
+  { key: 'terminated' as const, labelKey: 'agreements.terminated', color: 'text-red-400' },
 ]
 
-function agreementToViewData(a: Agreement & { content?: string; purposeAndObjectives?: string }): ViewAgreementDialogData {
+function agreementToViewData(a: Agreement, t: (k: string) => string): ViewAgreementDialogData {
   return {
     id: a.id,
     title: a.title,
     parties: a.parties,
     type: a.type,
     date: a.date,
-    status: AGREEMENT_STATUS_LABELS[a.status],
-    content: a.content,
-    purposeAndObjectives: a.purposeAndObjectives,
+    status: t(AGREEMENT_STATUS_KEYS[a.status]),
+    content: a.content ?? undefined,
+    purposeAndObjectives: a.purposeAndObjectives ?? undefined,
   }
 }
 
 export function Agreements() {
+  const { t } = useTranslation()
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [viewAgreement, setViewAgreement] = useState<Agreement | null>(null)
   const [generatingId, setGeneratingId] = useState<string | null>(null)
@@ -91,20 +93,20 @@ export function Agreements() {
   return (
     <div className="min-h-screen">
       <PageHeader
-        title="Agreements"
-        subtitle="Manage agreements and collaborate with AI suggestions"
+        title={t('agreements.title')}
+        subtitle={t('agreements.subtitle')}
       />
       {/* Summary Cards */}
       <div className="px-8 pt-6 pb-4 ">
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {summaryCardConfig.map(({ key, label, color }) => (
+          {summaryCardConfig.map(({ key, labelKey, color }) => (
             <div
-              key={label}
+              key={labelKey}
               className="px-4 py-5 text-center bg-[#0A1628CC] rounded-xl border border-brand-accent-dark/30 overflow-hidden relative"
             >
               <CornerAccents />
               <p className="text-xs text-brand-accent-dark mb-2 uppercase tracking-wide">
-                {label}
+                {t(labelKey)}
               </p>
               <p className={cn('text-3xl font-bold', color)}>
                 {isLoading ? '—' : stats[key]}
@@ -120,7 +122,7 @@ export function Agreements() {
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-semibold text-brand-accent-dark">
-              All Agreements
+              {t('agreements.allAgreements')}
             </h2>
             {isAdmin && (
               <Button
@@ -128,7 +130,7 @@ export function Agreements() {
                 onClick={() => setCreateDialogOpen(true)}
               >
                 <Plus className="w-4 h-4 mr-2" />
-                Create Agreement
+                {t('agreements.createAgreement')}
               </Button>
             )}
           </div>
@@ -140,14 +142,14 @@ export function Agreements() {
           />
 
           {error && (
-            <p className="text-red-400 text-sm py-4">Failed to load agreements. Please try again.</p>
+            <p className="text-red-400 text-sm py-4">{t('agreements.failedToLoad')}</p>
           )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {isLoading ? (
-              <p className="text-brand-muted-text-dark col-span-2 py-8">Loading...</p>
+              <p className="text-brand-muted-text-dark col-span-2 py-8">{t('agreements.loading')}</p>
             ) : items.length === 0 ? (
-              <p className="text-brand-muted-text-dark col-span-2 py-8">No agreements found.</p>
+              <p className="text-brand-muted-text-dark col-span-2 py-8">{t('agreements.noneFound')}</p>
             ) : (
               items.map((agreement) => (
                 <Card
@@ -162,17 +164,17 @@ export function Agreements() {
                         {agreement.title}
                       </h4>
                       {generatingId === agreement.id ? (
-                        <div className="flex items-center gap-1 shrink-0 text-brand-accent-dark" title="Generating AI draft…">
+                        <div className="flex items-center gap-1 shrink-0 text-brand-accent-dark" title={t('contracts.generatingDraft')}>
                           <Loader2 className="w-4 h-4 animate-spin shrink-0" />
-                          <span className="text-xs">Generating…</span>
+                          <span className="text-xs">{t('agreements.generating')}</span>
                         </div>
                       ) : agreement.aiSuggestions != null && agreement.aiSuggestions > 0 ? (
                         <div
                           className="flex items-center gap-1 shrink-0 text-green-500"
-                          title={`${agreement.aiSuggestions} AI clause(s)`}
+                          title={t('agreements.aiClauses', { count: agreement.aiSuggestions })}
                         >
                           <CircleCheckBig className="w-4 h-4 shrink-0" />
-                          <span className="text-xs font-medium">AI Draft Ready</span>
+                          <span className="text-xs font-medium">{t('agreements.aiDraftReady')}</span>
                         </div>
                       ) : null}
                     </div>
@@ -184,13 +186,13 @@ export function Agreements() {
 
                     <div className="space-y-2 mb-4">
                       <div className="flex justify-between items-baseline text-sm">
-                        <span className="text-brand-accent-dark/60">Type:</span>
+                        <span className="text-brand-accent-dark/60">{t('agreements.type')}</span>
                         <span className="inline-flex items-center rounded border border-brand-accent-dark bg-brand-accent-dark/10 px-2 py-0.5 text-xs font-medium text-brand-accent-dark">
                           {agreement.type}
                         </span>
                       </div>
                       <div className="flex justify-between items-baseline text-sm">
-                        <span className="text-brand-accent-dark/60">Parties:</span>
+                        <span className="text-brand-accent-dark/60">{t('agreements.parties')}</span>
                         <span className="text-brand-muted-text-dark">{agreement.parties}</span>
                       </div>
                       <div className="flex items-center gap-1.5 text-sm text-brand-muted-text-dark mb-5">
@@ -213,14 +215,14 @@ export function Agreements() {
                             'bg-red-500/20 border-red-500/80 text-red-400'
                         )}
                       >
-                        {AGREEMENT_STATUS_LABELS[agreement.status]}
+                        {t(AGREEMENT_STATUS_KEYS[agreement.status])}
                       </span>
                       <div className="flex items-center gap-3">
                         <button
                           type="button"
                           onClick={() => setViewAgreement(agreement)}
                           className="text-brand-muted-text-dark hover:text-brand-accent-dark/80 transition-colors"
-                          aria-label="View"
+                          aria-label={t('agreements.ariaView')}
                         >
                           <Eye className="w-5 h-5" />
                         </button>
@@ -229,14 +231,14 @@ export function Agreements() {
                             <button
                               type="button"
                               className="text-brand-muted-text-dark hover:text-brand-accent-dark/80 transition-colors"
-                              aria-label="Edit"
+                              aria-label={t('agreements.ariaEdit')}
                             >
                               <Pencil className="w-5 h-5" />
                             </button>
                             <button
                               type="button"
                               className="text-brand-accent-dark hover:text-brand-accent-dark/80 transition-colors"
-                              aria-label="AI suggestions"
+                              aria-label={t('agreements.ariaAiSuggestions')}
                             >
                               <Sparkles className="w-5 h-5" />
                             </button>
@@ -254,7 +256,7 @@ export function Agreements() {
 
       <ViewAgreementDialog
         open={!!viewAgreement}
-        data={viewAgreement ? agreementToViewData(viewAgreement) : null}
+        data={viewAgreement ? agreementToViewData(viewAgreement, t) : null}
         onClose={() => setViewAgreement(null)}
       />
     </div>

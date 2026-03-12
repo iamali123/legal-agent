@@ -54,7 +54,7 @@ export const getLegislations = async (
       version: item.version,
       lastUpdated: item.updatedAt || item.createdAt,
       createdAt: item.createdAt,
-      aiFlags: item.aiFlags || { type: 'clean' as const },
+      aiFlags: item.aiFlags ? { type: (item.aiFlags.type === 'warning' ? 'warning' : 'clean'), count: item.aiFlags.count } : { type: 'clean' },
     }))
     
     return {
@@ -92,7 +92,7 @@ export const getLegislations = async (
       version: item.version,
       lastUpdated: item.updatedAt || item.createdAt,
       createdAt: item.createdAt,
-      aiFlags: item.aiFlags || { type: 'clean' as const },
+      aiFlags: item.aiFlags ? { type: (item.aiFlags.type === 'warning' ? 'warning' : 'clean'), count: item.aiFlags.count } : { type: 'clean' },
     }))
     
     return {
@@ -151,8 +151,8 @@ export const createLegislation = async (
  * Use updateLegislationStatus for status updates only
  */
 export const updateLegislation = async (
-  id: string,
-  data: UpdateLegislationRequest
+  _id: string,
+  _data: UpdateLegislationRequest
 ): Promise<ApiSuccessResponse<Legislation>> => {
   // TODO: Backend doesn't have PUT endpoint yet
   // For now, only status updates are supported via PATCH /legislations/:id/status
@@ -193,7 +193,7 @@ export const createLegislationSection = async (
  * @deprecated Backend doesn't implement DELETE endpoint yet
  */
 export const deleteLegislation = async (
-  id: string
+  _id: string
 ): Promise<ApiSuccessResponse<null>> => {
   // TODO: Backend doesn't have DELETE endpoint yet
   throw new Error('Delete legislation endpoint not implemented in backend')
@@ -220,7 +220,7 @@ export const generateLegislationDraft = async (
     success: true,
     message: 'AI draft generation started',
     data: {
-      jobId: job.data.id,
+      jobId: job.data.jobId,
       status: job.data.status,
       estimatedTime: job.data.estimatedTime || 30,
       legislationId: id,

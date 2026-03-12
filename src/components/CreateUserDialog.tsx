@@ -3,9 +3,15 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import type { CreateUserRequest, UserRole } from '@/types/api.types'
+import { useTranslation } from 'react-i18next'
 
 /** Backend enum Users.role */
 const USER_ROLE_OPTIONS: UserRole[] = ['Admin', 'Legal Officer', 'Reviewer']
+const USER_ROLE_KEYS: Record<UserRole, string> = {
+  'Admin': 'createUser.roleAdmin',
+  'Legal Officer': 'createUser.roleLegalOfficer',
+  'Reviewer': 'createUser.roleReviewer',
+}
 
 interface CreateUserDialogProps {
   open: boolean
@@ -20,6 +26,7 @@ export function CreateUserDialog({
   onSubmit,
   isPending = false,
 }: CreateUserDialogProps) {
+  const { t } = useTranslation()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -33,7 +40,7 @@ export function CreateUserDialog({
     e.preventDefault()
     setError(null)
     if (!name.trim() || !email.trim() || !password.trim() || !department.trim()) {
-      setError('Please fill in all fields.')
+      setError(t('createUser.errorAllFields'))
       return
     }
     onSubmit({
@@ -65,70 +72,70 @@ export function CreateUserDialog({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="p-6 shrink-0">
-          <h2 className="text-xl font-bold text-white mb-4">Add User</h2>
+          <h2 className="text-xl font-bold text-white mb-4">{t('createUser.title')}</h2>
         </div>
         <form id="create-user-form" onSubmit={handleSubmit} className="px-6 pb-4 flex-1 min-h-0 overflow-y-auto sidebar-nav-scroll space-y-4">
             {error && (
               <p className="text-sm text-red-400">{error}</p>
             )}
             <div>
-              <Label htmlFor="create-user-name" className="text-white">Name</Label>
+              <Label htmlFor="create-user-name" className="text-white">{t('createUser.name')}</Label>
               <Input
                 id="create-user-name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Full name"
+                placeholder={t('createUser.namePlaceholder')}
                 className="mt-1 bg-white/5 border-brand-accent-dark/30"
                 disabled={isPending}
               />
             </div>
             <div>
-              <Label htmlFor="create-user-email" className="text-white">Email</Label>
+              <Label htmlFor="create-user-email" className="text-white">{t('createUser.email')}</Label>
               <Input
                 id="create-user-email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="email@legal.com"
+                placeholder={t('createUser.emailPlaceholder')}
                 className="mt-1 bg-white/5 border-brand-accent-dark/30"
                 disabled={isPending}
               />
             </div>
             <div>
-              <Label htmlFor="create-user-password" className="text-white">Password</Label>
+              <Label htmlFor="create-user-password" className="text-white">{t('createUser.password')}</Label>
               <Input
                 id="create-user-password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
+                placeholder={t('createUser.passwordPlaceholder')}
                 className="mt-1 bg-white/5 border-brand-accent-dark/30"
                 disabled={isPending}
               />
             </div>
             <div>
-              <Label htmlFor="create-user-role" className="text-white">Role</Label>
+              <Label htmlFor="create-user-role" className="text-white">{t('createUser.role')}</Label>
               <select
                 id="create-user-role"
                 value={role}
-                onChange={(e) => setRole(e.target.value)}
+                onChange={(e) => setRole(e.target.value as CreateUserRequest['role'])}
                 className="mt-1 w-full h-10 rounded-md border border-brand-accent-dark/30 bg-white/5 text-white px-3 focus:outline-none focus:ring-2 focus:ring-brand-accent-dark"
                 disabled={isPending}
               >
                 {USER_ROLE_OPTIONS.map((r) => (
                   <option key={r} value={r} className="bg-[#0A1628] text-white">
-                    {r}
+                    {t(USER_ROLE_KEYS[r])}
                   </option>
                 ))}
               </select>
             </div>
             <div>
-              <Label htmlFor="create-user-department" className="text-white">Department</Label>
+              <Label htmlFor="create-user-department" className="text-white">{t('createUser.department')}</Label>
               <Input
                 id="create-user-department"
                 value={department}
                 onChange={(e) => setDepartment(e.target.value)}
-                placeholder="e.g. Compliance, Corporate Law"
+                placeholder={t('createUser.departmentPlaceholder')}
                 className="mt-1 bg-white/5 border-brand-accent-dark/30"
                 disabled={isPending}
               />
@@ -143,7 +150,7 @@ export function CreateUserDialog({
               disabled={isPending}
               className="flex-1 border-brand-accent-dark/30 text-white hover:bg-white/10"
             >
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button
               type="submit"
@@ -151,7 +158,7 @@ export function CreateUserDialog({
               disabled={isPending}
               className="flex-1 bg-brand-accent-dark text-[#0A1628] hover:bg-brand-accent-dark/90"
             >
-              {isPending ? 'Adding...' : 'Add User'}
+              {isPending ? t('createUser.adding') : t('createUser.addUser')}
             </Button>
           </div>
         </div>

@@ -19,7 +19,7 @@ export const uploadFile = async (
   data: UploadFileRequest
 ): Promise<ApiSuccessResponse<File>> => {
   const formData = new FormData()
-  formData.append('file', data.file)
+  formData.append('file', data.file as Blob)
   
   if (data.entityType) {
     formData.append('entityType', data.entityType)
@@ -52,7 +52,7 @@ export const getFile = async (
   // TODO: Backend doesn't have GET /files/:id endpoint yet
   // For now, get all files and filter client-side
   const allFiles = await getFiles()
-  const file = allFiles.data.items?.find((f) => f.id === fileId)
+  const file = allFiles.data.items?.find((f) => f.fileId === fileId)
   if (!file) {
     throw new Error(`File with id ${fileId} not found`)
   }

@@ -17,7 +17,7 @@ export const UAE_PASS_AUTH_URL =
 
 export const getApiBaseURL = () => API_CONFIG.baseURL
 
-export const setApiBaseURL = (url: string) => {
+export const setApiBaseURL = (_url: string) => {
   // This can be used to dynamically change the base URL if needed
   // For now, we'll use environment variables
   console.warn('setApiBaseURL: Use VITE_API_BASE_URL environment variable instead')

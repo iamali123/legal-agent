@@ -8,6 +8,7 @@ import {
   useAIHighlights,
   useRecentActivity,
 } from '@/hooks/api'
+import { useTranslation } from 'react-i18next'
 
 const highlightBorderMap = {
   warning: 'border-l-[#FF6900]',
@@ -17,6 +18,7 @@ const highlightBorderMap = {
 } as const
 
 export function Dashboard() {
+  const { t } = useTranslation()
   const { data: statsData, isLoading: statsLoading, error: statsError } = useDashboardStats()
   const { data: highlightsData } = useAIHighlights({ limit: 10 })
   const { data: activityData } = useRecentActivity({ limit: 10 })
@@ -28,7 +30,7 @@ export function Dashboard() {
   if (statsError) {
     return (
       <div className="min-h-screen flex items-center justify-center p-8">
-        <p className="text-red-400">Failed to load dashboard. Please try again.</p>
+        <p className="text-red-400">{t('dashboard.failedToLoad')}</p>
       </div>
     )
   }
@@ -36,8 +38,8 @@ export function Dashboard() {
   return (
     <div className="min-h-screen">
       <DashboardHeader
-        title="Welcome to Legal Portal"
-        subtitle="AI-powered legal management at your fingertips"
+        title={t('dashboard.welcomeTitle')}
+        subtitle={t('dashboard.subtitle')}
       />
 
       {/* Summary Cards */}
@@ -49,13 +51,13 @@ export function Dashboard() {
                 <FileText className="w-6 h-6 text-brand-accent-dark" />
               </div>
               <div>
-                <p className="text-sm text-brand-accent-dark mb-2">Total Legislations</p>
+                <p className="text-sm text-brand-accent-dark mb-2">{t('dashboard.totalLegislations')}</p>
                 <p className="text-5xl font-bold text-white mb-1">
                   {statsLoading ? '—' : stats?.legislations?.total ?? 0}
                 </p>
                 <hr className="border-0 h-px bg-hr-glow my-2" />
                 <p className="text-xs text-brand-muted-text-dark">
-                  {Number(stats?.legislations?.byStatus?.find((s) => s.status === 'active')?.count ?? 0)} active
+                  {Number(stats?.legislations?.byStatus?.find((s) => s.status === 'active')?.count ?? 0)} {t('dashboard.active')}
                 </p>
               </div>
               <CornerAccents />
@@ -68,13 +70,13 @@ export function Dashboard() {
                 <AlertCircle className="w-6 h-6 text-orange-400" />
               </div>
               <div>
-                <p className="text-sm text-brand-accent-dark mb-2">Pending Approvals</p>
+                <p className="text-sm text-brand-accent-dark mb-2">{t('dashboard.pendingApprovals')}</p>
                 <p className="text-5xl font-bold text-white mb-1">
                   {statsLoading ? '—' : stats?.approvals?.pending ?? 0}
                 </p>
                 <hr className="border-0 h-px bg-hr-glow my-2" />
                 <p className="text-xs text-brand-muted-text-dark">
-                  Requires review
+                  {t('dashboard.requiresReview')}
                 </p>
               </div>
               <CornerAccents />
@@ -87,13 +89,13 @@ export function Dashboard() {
                 <FileCheck className="w-6 h-6 text-green-400" />
               </div>
               <div>
-                <p className="text-sm text-brand-accent-dark mb-2">Total Contracts</p>
+                <p className="text-sm text-brand-accent-dark mb-2">{t('dashboard.totalContracts')}</p>
                 <p className="text-5xl font-bold text-white mb-1">
                   {statsLoading ? '—' : stats?.contracts?.total ?? 0}
                 </p>
                 <hr className="border-0 h-px bg-hr-glow my-2" />
                 <p className="text-xs text-brand-muted-text-dark">
-                  Total value: {statsLoading ? '—' : new Intl.NumberFormat('en-AE', { style: 'currency', currency: 'AED', minimumFractionDigits: 0 }).format(stats?.contracts?.totalValue ?? 0)}
+                  {t('dashboard.totalValue')}: {statsLoading ? '—' : new Intl.NumberFormat('en-AE', { style: 'currency', currency: 'AED', minimumFractionDigits: 0 }).format(stats?.contracts?.totalValue ?? 0)}
                 </p>
               </div>
               <CornerAccents />
@@ -106,13 +108,13 @@ export function Dashboard() {
                 <Calendar className="w-6 h-6 text-purple-400" />
               </div>
               <div>
-                <p className="text-sm text-brand-accent-dark mb-2">AI Processed Jobs</p>
+                <p className="text-sm text-brand-accent-dark mb-2">{t('dashboard.aiProcessedJobs')}</p>
                 <p className="text-5xl font-bold text-white mb-1">
                   {statsLoading ? '—' : stats?.ai?.processedJobs ?? 0}
                 </p>
                 <hr className="border-0 h-px bg-hr-glow my-2" />
                 <p className="text-xs text-brand-muted-text-dark">
-                  Total AI operations
+                  {t('dashboard.totalAiOperations')}
                 </p>
               </div>
               <CornerAccents />
@@ -128,13 +130,13 @@ export function Dashboard() {
           <div className="flex items-center gap-2 mb-6">
             <Sparkles className="w-5 h-5 text-brand-accent-dark" />
             <h2 className="text-xl font-semibold text-brand-accent-dark">
-              AI Highlights & Insights
+              {t('dashboard.aiHighlightsInsights')}
             </h2>
           </div>
 
           <div className="space-y-4">
             {highlights.length === 0 ? (
-              <p className="text-sm text-brand-muted-text-dark">No AI highlights at the moment.</p>
+              <p className="text-sm text-brand-muted-text-dark">{t('dashboard.noHighlights')}</p>
             ) : (
               highlights.map((h) => (
                 <Card
@@ -167,14 +169,14 @@ export function Dashboard() {
               <div className="mb-5">
                 <h2 className="text-xl font-bold text-brand-accent-dark flex items-center gap-2">
                   <span className="text-brand-accent-dark">•</span>
-                  Recent Activity
+                  {t('dashboard.recentActivity')}
                 </h2>
               </div>
 
               <div className="space-y-0">
                 {activities.length === 0 ? (
                   <p className="text-sm text-brand-muted-text-dark py-4">
-                    No recent activity.
+                    {t('dashboard.noRecentActivity')}
                   </p>
                 ) : (
                   activities.map((a) => (

@@ -5,23 +5,25 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
 import type { LegislationStatus } from '@/types/legislation.types'
+import { useTranslation } from 'react-i18next'
 
-const JURISDICTION_OPTIONS = ['Federal', 'Emirate', 'Local']
+const JURISDICTION_OPTIONS = ['Federal', 'Emirate', 'Local'] as const
+const JURISDICTION_KEYS = ['createLegislation.federal', 'createLegislation.emirate', 'createLegislation.local'] as const
 
-const STATUS_OPTIONS: { value: LegislationStatus; label: string }[] = [
-  { value: 'draft', label: 'Draft' },
-  { value: 'active', label: 'Active' },
-  { value: 'published', label: 'Published' },
-  { value: 'amended', label: 'Amended' },
+const STATUS_OPTIONS: { value: LegislationStatus; labelKey: string }[] = [
+  { value: 'draft', labelKey: 'legislations.statusDraft' },
+  { value: 'active', labelKey: 'legislations.statusActive' },
+  { value: 'published', labelKey: 'legislations.statusPublished' },
+  { value: 'amended', labelKey: 'legislations.statusAmended' },
 ]
 
-const AI_BENEFITS = [
-  'Suggested title and structure',
-  'Relevant legal references',
-  'Standard clauses and provisions',
-  'Cross-law validation',
-  'Compliance checks',
-]
+const AI_BENEFIT_KEYS = [
+  'createLegislation.benefit1',
+  'createLegislation.benefit2',
+  'createLegislation.benefit3',
+  'createLegislation.benefit4',
+  'createLegislation.benefit5',
+] as const
 
 interface CreateLegislationDialogProps {
   open: boolean
@@ -52,6 +54,7 @@ export function CreateLegislationDialog({
   onSave: _onSave, // eslint-disable-line @typescript-eslint/no-unused-vars
   onGenerateDraft,
 }: CreateLegislationDialogProps) {
+  const { t } = useTranslation()
   const [title, setTitle] = useState('')
   const [jurisdiction, setJurisdiction] = useState('')
   const [description, setDescription] = useState('')
@@ -104,10 +107,10 @@ export function CreateLegislationDialog({
               </div>
               <div>
               <h2 className="text-xl font-semibold text-white">
-                Create Legislation
+                {t('createLegislation.title')}
               </h2>
               <p className="text-sm text-brand-muted-text-dark">
-              Let AI assist you in creating a new legislation.
+              {t('createLegislation.subtitle')}
             </p>
             </div>
             </div>
@@ -116,7 +119,7 @@ export function CreateLegislationDialog({
             type="button"
             onClick={handleClose}
             className="p-2 rounded-lg text-brand-muted-text-dark hover:text-foreground transition-colors shrink-0"
-            aria-label="Close"
+            aria-label={t('common.close')}
           >
             <X className="w-5 h-5" />
           </button>
@@ -125,17 +128,17 @@ export function CreateLegislationDialog({
         {/* Form */}
         <div className="px-6 pb-4 space-y-3 flex-1 min-h-0 overflow-y-auto sidebar-nav-scroll">
           <div className="space-y-1">
-            <Label htmlFor="legislation-title" className='text-brand-accent-dark'>Legislation Title</Label>
+            <Label htmlFor="legislation-title" className='text-brand-accent-dark'>{t('createLegislation.legislationTitle')}</Label>
             <Input
               id="legislation-title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g., Data Protection Act 2024"
+              placeholder={t('createLegislation.titlePlaceholder')}
               className="rounded-lg bg-[#0A162880] border border-brand-accent-dark/30"
             />
           </div>
           <div className="space-y-1">
-            <Label htmlFor="legislation-jurisdiction" className='text-brand-accent-dark'>Jurisdiction</Label>
+            <Label htmlFor="legislation-jurisdiction" className='text-brand-accent-dark'>{t('createLegislation.jurisdiction')}</Label>
             <div className="relative">
               <select
                 id="legislation-jurisdiction"
@@ -146,10 +149,10 @@ export function CreateLegislationDialog({
                   'text-sm text-foreground'
                 )}
               >
-                <option value="">Select jurisdiction</option>
-                {JURISDICTION_OPTIONS.map((opt) => (
+                <option value="">{t('createLegislation.selectJurisdiction')}</option>
+                {JURISDICTION_OPTIONS.map((opt, i) => (
                   <option key={opt} value={opt}>
-                    {opt}
+                    {t(JURISDICTION_KEYS[i])}
                   </option>
                 ))}
               </select>
@@ -157,12 +160,12 @@ export function CreateLegislationDialog({
             </div>
           </div>
           <div className="space-y-1">
-            <Label htmlFor="legislation-description" className='text-brand-accent-dark'>Brief Description</Label>
+            <Label htmlFor="legislation-description" className='text-brand-accent-dark'>{t('createLegislation.briefDescription')}</Label>
             <textarea
               id="legislation-description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Describe the purpose and scope of this legislation..."
+              placeholder={t('createLegislation.descriptionPlaceholder')}
               rows={4}
               className={cn(
                 'flex w-full rounded-lg bg-[#0A162880] border border-brand-accent-dark/30 px-3 py-2',
@@ -172,7 +175,7 @@ export function CreateLegislationDialog({
           </div>
 
           <div className="space-y-1">
-            <Label htmlFor="legislation-status" className='text-brand-accent-dark'>Status</Label>
+            <Label htmlFor="legislation-status" className='text-brand-accent-dark'>{t('createLegislation.status')}</Label>
             <div className="relative">
               <select
                 id="legislation-status"
@@ -185,7 +188,7 @@ export function CreateLegislationDialog({
               >
                 {STATUS_OPTIONS.map((opt) => (
                   <option key={opt.value} value={opt.value}>
-                    {opt.label}
+                    {t(opt.labelKey)}
                   </option>
                 ))}
               </select>
@@ -194,12 +197,12 @@ export function CreateLegislationDialog({
           </div>
 
           <div className="space-y-1">
-            <Label htmlFor="legislation-content" className='text-brand-accent-dark'>Content</Label>
+            <Label htmlFor="legislation-content" className='text-brand-accent-dark'>{t('createLegislation.content')}</Label>
             <textarea
               id="legislation-content"
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              placeholder="Full text of the legislation goes here..."
+              placeholder={t('createLegislation.contentPlaceholder')}
               rows={6}
               className={cn(
                 'flex w-full rounded-lg bg-[#0A162880] border border-brand-accent-dark/30 px-3 py-2',
@@ -209,12 +212,12 @@ export function CreateLegislationDialog({
           </div>
 
           <div className="space-y-1">
-            <Label htmlFor="legislation-version" className='text-brand-accent-dark'>Version</Label>
+            <Label htmlFor="legislation-version" className='text-brand-accent-dark'>{t('createLegislation.version')}</Label>
             <Input
               id="legislation-version"
               value={version}
               onChange={(e) => setVersion(e.target.value)}
-              placeholder="e.g., 1.0"
+              placeholder={t('createLegislation.versionPlaceholder')}
               className="rounded-lg bg-[#0A162880] border border-brand-accent-dark/30"
             />
           </div>
@@ -224,12 +227,12 @@ export function CreateLegislationDialog({
             <div className="flex items-center gap-2 mb-3">
               <Sparkles className="w-4 h-4 text-brand-accent-dark shrink-0" />
               <h3 className="font-semibold text-white text-sm">
-                AI Will Provide:
+                {t('createLegislation.aiWillProvide')}
               </h3>
             </div>
             <ul className="space-y-1 text-sm text-brand-muted-text-dark list-disc list-inside">
-              {AI_BENEFITS.map((item) => (
-                <li key={item}>{item}</li>
+              {AI_BENEFIT_KEYS.map((key) => (
+                <li key={key}>{t(key)}</li>
               ))}
             </ul>
           </div>
@@ -238,13 +241,13 @@ export function CreateLegislationDialog({
         {/* Actions */}
         <div className="grid grid-cols-2 gap-3 p-6 pt-2 shrink-0">
           <Button variant="outline" onClick={handleCancel} className='bg-transparent' >
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button
             onClick={handleGenerateDraft}
           >
             <Sparkles className="w-4 h-4 mr-2" />
-            Generate Draft
+            {t('createLegislation.generateDraft')}
           </Button>
         </div>
       </div>

@@ -1,6 +1,7 @@
 import headerVideoBg from '@/assets/header-video-bg.mp4'
 import { Search } from 'lucide-react'
 import { Input } from './ui/input'
+import { useTranslation } from 'react-i18next'
 
 interface DashboardHeaderProps {
   /** Page name shown as the main heading */
@@ -9,7 +10,16 @@ interface DashboardHeaderProps {
   subtitle?: string
 }
 
+const FILTER_TAG_KEYS = [
+  'pageHeader.filterTagLegislations',
+  'pageHeader.filterTagLawsPolicy',
+  'pageHeader.filterTagContracts',
+  'pageHeader.filterTagAgreements',
+  'pageHeader.filterTagApprovals',
+] as const
+
 export function DashboardHeader({ title, subtitle }: DashboardHeaderProps) {
+  const { t } = useTranslation()
   return (
     <div className="relative min-h-[338px] px-8 py-16 text-center overflow-hidden">
       {/* Video background */}
@@ -46,14 +56,14 @@ export function DashboardHeader({ title, subtitle }: DashboardHeaderProps) {
         <div className="max-w-4xl mx-auto">
           <div className="flex gap-4 mb-4">
             <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-accent-dark" />
+              <Search className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-accent-dark" />
               <Input
                 type="text"
-                placeholder="Search laws, policies, or regulations..."
-                className="pl-10 h-14 text-base rounded-xl bg-[#0A1628CC] border border-brand-accent-dark/30"
+                placeholder={t('pageHeader.searchPlaceholder')}
+                className="ltr:pl-10 rtl:pr-10 h-14 text-base rounded-xl bg-[#0A1628CC] border border-brand-accent-dark/30"
               />
-              <button className="h-10 px-6 bg-brand-accent-dark/20 border border-brand-accent-dark/30 hover:border-brand-accent-dark/50 text-brand-accent-dark rounded-xl text-sm hover:bg-brand-accent-dark/30 transition-colors absolute right-2 top-1/2 -translate-y-1/2">
-                Search
+              <button className="h-10 px-6 bg-brand-accent-dark/20 border border-brand-accent-dark/30 hover:border-brand-accent-dark/50 text-brand-accent-dark rounded-xl text-sm hover:bg-brand-accent-dark/30 transition-colors absolute ltr:right-2 rtl:left-2 top-1/2 -translate-y-1/2">
+                {t('common.search')}
               </button>
             </div>
           </div>
@@ -61,12 +71,12 @@ export function DashboardHeader({ title, subtitle }: DashboardHeaderProps) {
       </div>
         {/* Filter Tags */}
         <div className="flex gap-2 justify-center flex-wrap">
-            {['Legislations', 'Laws / Policy', 'Contracts', 'Agreements', 'Approvals'].map((tag) => (
+            {FILTER_TAG_KEYS.map((key) => (
               <button
-                key={tag}
+                key={key}
                 className="px-4 py-2 rounded-xl bg-white/10 border border-brand-accent-dark/30 hover:border-brand-accent-dark/50 text-white/70 text-sm hover:bg-brand-accent-dark/30 transition-colors"
               >
-                {tag}
+                {t(key)}
               </button>
             ))}
           </div>

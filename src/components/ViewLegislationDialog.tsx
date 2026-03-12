@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { formatDate } from '@/lib/utils'
 import { useLegislation, useCreateLegislationSection, useIsAdmin } from '@/hooks/api'
 import { AddLegislationSectionDialog } from '@/components/AddLegislationSectionDialog'
+import { useTranslation } from 'react-i18next'
 
 interface ViewLegislationDialogProps {
   open: boolean
@@ -17,6 +18,7 @@ export function ViewLegislationDialog({
   legislationId,
   onClose,
 }: ViewLegislationDialogProps) {
+  const { t } = useTranslation()
   const [addSectionOpen, setAddSectionOpen] = useState(false)
   const { data, isLoading, error } = useLegislation(legislationId ?? '')
   const createSectionMutation = useCreateLegislationSection()
@@ -48,7 +50,7 @@ export function ViewLegislationDialog({
                   <div className="h-4 w-1/2 bg-white/10 rounded animate-pulse" />
                 </>
               ) : error || !legislation ? (
-                <p className="text-sm text-red-400">Failed to load legislation details.</p>
+                <p className="text-sm text-red-400">{t('viewLegislation.failedToLoad')}</p>
               ) : (
                 <>
                   <h2 className="text-xl font-bold mb-1 text-white">
@@ -71,13 +73,13 @@ export function ViewLegislationDialog({
             <div className="px-6 pb-4 grid grid-cols-2 gap-3">
               <div className="rounded-xl bg-[#0A162880] border border-brand-accent-dark/20 px-4 py-3">
                 <p className="text-xs text-brand-accent-dark uppercase tracking-wide mb-1">
-                  Jurisdiction
+                  {t('viewLegislation.jurisdiction')}
                 </p>
                 <p className="text-sm font-medium text-white">{legislation.jurisdiction}</p>
               </div>
               <div className="rounded-xl bg-[#0A162880] border border-brand-accent-dark/20 px-4 py-3">
                 <p className="text-xs text-brand-accent-dark uppercase tracking-wide mb-1">
-                  Status
+                  {t('viewLegislation.status')}
                 </p>
                 <div>
                   <Badge
@@ -97,7 +99,7 @@ export function ViewLegislationDialog({
               <div className="rounded-xl bg-[#0A162880] border border-brand-accent-dark/20 px-4 py-3">
                 <p className="text-xs text-brand-accent-dark uppercase tracking-wide mb-1 flex items-center gap-1.5">
                   <Calendar className="w-3.5 h-3.5" />
-                  Last Updated
+                  {t('viewLegislation.lastUpdated')}
                 </p>
                 <p className="text-sm font-medium text-white">
                   {formatDate(
@@ -109,7 +111,7 @@ export function ViewLegislationDialog({
               <div className="rounded-xl bg-[#0A162880] border border-brand-accent-dark/20 px-4 py-3">
                 <p className="text-xs text-brand-accent-dark uppercase tracking-wide mb-1 flex items-center gap-1.5">
                   <Calendar className="w-3.5 h-3.5" />
-                  Created
+                  {t('viewLegislation.created')}
                 </p>
                 <p className="text-sm font-medium text-white">
                   {formatDate(legislation.createdAt)}
@@ -123,7 +125,7 @@ export function ViewLegislationDialog({
                 <div className="rounded-xl bg-[#0A162880] border border-brand-accent-dark/20 px-4 py-3">
                   <p className="text-xs text-brand-accent-dark uppercase tracking-wide mb-1 flex items-center gap-1.5">
                     <User className="w-3.5 h-3.5" />
-                    Created By
+                    {t('viewLegislation.createdBy')}
                   </p>
                   <p className="text-sm font-medium text-white">
                     {(legislation as { creator?: { name: string } }).creator?.name ?? '—'}
@@ -138,16 +140,16 @@ export function ViewLegislationDialog({
                 <div className="rounded-xl bg-[#0A162880] border border-brand-accent-dark/20 px-4 py-3">
                   <p className="text-xs text-brand-accent-dark uppercase tracking-wide mb-2 flex items-center gap-1.5">
                     <Sparkles className="w-3.5 h-3.5" />
-                    AI Flags
+                    {t('viewLegislation.aiFlags')}
                   </p>
                   <div className="flex items-center gap-2">
                     {legislation.aiFlags.type === 'clean' ? (
-                      <span className="text-sm text-green-500">No issues detected</span>
+                      <span className="text-sm text-green-500">{t('viewLegislation.noIssuesDetected')}</span>
                     ) : (
                       <span className="text-sm text-amber-500">
                         {legislation.aiFlags.count != null
-                          ? `${legislation.aiFlags.count} flag(s)`
-                          : 'Review recommended'}
+                          ? t('viewLegislation.flagsCount', { count: legislation.aiFlags.count })
+                          : t('viewLegislation.reviewRecommended')}
                       </span>
                     )}
                   </div>
@@ -160,7 +162,7 @@ export function ViewLegislationDialog({
               <div className="px-6 pb-4">
                 <div className="flex items-center justify-between mb-2">
                   <p className="text-xs text-brand-accent-dark uppercase tracking-wide">
-                    Sections
+                    {t('viewLegislation.sections')}
                   </p>
                   {isAdmin && (
                     <Button
@@ -171,7 +173,7 @@ export function ViewLegislationDialog({
                       className="border-brand-accent-dark/30 text-brand-accent-dark hover:bg-brand-accent-dark/10 hover:text-white"
                     >
                       <Plus className="w-4 h-4 mr-1.5" />
-                      Add section
+                      {t('viewLegislation.addSection')}
                     </Button>
                   )}
                 </div>
@@ -188,7 +190,7 @@ export function ViewLegislationDialog({
                         className="px-4 py-3"
                       >
                         <p className="text-sm font-medium text-white">
-                          {sec.title ?? `Section ${sec.order ?? '—'}`}
+                          {sec.title ?? t('viewLegislation.sectionTitle', { order: String(sec.order ?? '—') })}
                         </p>
                       </div>
                     ))}
@@ -202,7 +204,7 @@ export function ViewLegislationDialog({
                 {(!Array.isArray(legislation.sections) || legislation.sections.length === 0) && (
                   <div className="px-6 pb-4">
                     <p className="text-xs text-brand-accent-dark uppercase tracking-wide mb-2">
-                      Sections
+                      {t('viewLegislation.sections')}
                     </p>
                     <Button
                       type="button"
@@ -211,7 +213,7 @@ export function ViewLegislationDialog({
                       className="w-full border-brand-accent-dark/30 text-brand-accent-dark hover:bg-brand-accent-dark/10"
                     >
                       <Plus className="w-4 h-4 mr-2" />
-                      Add section
+                      {t('viewLegislation.addSection')}
                     </Button>
                   </div>
                 )}
@@ -239,7 +241,7 @@ export function ViewLegislationDialog({
                     createSectionMutation.isError
                       ? (createSectionMutation.error as { response?: { data?: { message?: string } }; message?: string })?.response?.data?.message ??
                         (createSectionMutation.error as Error)?.message ??
-                        'Failed to add section'
+                        t('viewLegislation.failedToAddSection')
                       : null
                   }
                 />
@@ -250,7 +252,7 @@ export function ViewLegislationDialog({
             {'content' in legislation && legislation.content && (
               <div className="px-6 pb-4">
                 <p className="text-xs text-brand-accent-dark uppercase tracking-wide mb-2">
-                  Content
+                  {t('viewLegislation.content')}
                 </p>
                 <div className="rounded-xl bg-[#0A162880] border border-brand-accent-dark/20 p-4">
                   <p className="text-sm text-white/80 leading-relaxed whitespace-pre-wrap">
@@ -265,7 +267,7 @@ export function ViewLegislationDialog({
         {/* Close button */}
         <div className="p-6 pt-2 flex shrink-0">
           <Button type="button" onClick={onClose} className="min-w-[120px]">
-            Close
+            {t('common.close')}
           </Button>
         </div>
       </div>

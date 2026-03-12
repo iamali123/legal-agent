@@ -367,7 +367,7 @@ export function SummarizePanel({ onClose }: SummarizePanelProps) {
       <div className="flex items-center gap-3 px-6 py-4 border-b border-brand-accent-dark/20 shrink-0">
         <button
           type="button"
-          onClick={onClose}
+          onClick={() => onClose()}
           className="p-1 rounded-lg text-white/60 hover:text-white hover:bg-white/10 transition-colors"
           aria-label="Back"
         >

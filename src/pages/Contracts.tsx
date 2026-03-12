@@ -14,14 +14,15 @@ import {
   useIsAdmin,
 } from '@/hooks/api'
 import type { Contract, ContractStatus } from '@/types/contract.types'
+import { useTranslation } from 'react-i18next'
 
-const CONTRACT_STATUS_LABELS: Record<ContractStatus, string> = {
-  draft: 'Draft',
-  pending_approval: 'Pending Approval',
-  approved: 'Approved',
-  active: 'Active',
-  expired: 'Expired',
-  terminated: 'Terminated',
+const CONTRACT_STATUS_KEYS: Record<ContractStatus, string> = {
+  draft: 'contracts.draft',
+  pending_approval: 'contracts.pendingApproval',
+  approved: 'contracts.approved',
+  active: 'contracts.active',
+  expired: 'contracts.expired',
+  terminated: 'contracts.terminated',
 }
 
 function deriveContractStats(items: Contract[]) {
@@ -36,20 +37,20 @@ function deriveContractStats(items: Contract[]) {
 }
 
 const summaryCardConfig = [
-  { key: 'draft' as const, label: 'Draft', color: 'text-gray-400' },
-  { key: 'pending_approval' as const, label: 'Pending Approval', color: 'text-orange-400' },
-  { key: 'active' as const, label: 'Active', color: 'text-green-400' },
-  { key: 'expired' as const, label: 'Expired', color: 'text-red-400' },
+  { key: 'draft' as const, labelKey: 'contracts.draft', color: 'text-gray-400' },
+  { key: 'pending_approval' as const, labelKey: 'contracts.pendingApproval', color: 'text-orange-400' },
+  { key: 'active' as const, labelKey: 'contracts.active', color: 'text-green-400' },
+  { key: 'expired' as const, labelKey: 'contracts.expired', color: 'text-red-400' },
 ]
 
-function contractToViewData(c: Contract): ViewContractDialogData {
+function contractToViewData(c: Contract, t: (k: string) => string): ViewContractDialogData {
   return {
     id: c.id,
     title: c.title,
     counterparty: c.counterparty,
     type: c.type,
     value: c.value,
-    status: CONTRACT_STATUS_LABELS[c.status],
+    status: t(CONTRACT_STATUS_KEYS[c.status]),
     startDate: c.startDate,
     endDate: c.endDate,
     content: c.content,
@@ -57,6 +58,7 @@ function contractToViewData(c: Contract): ViewContractDialogData {
 }
 
 export function Contracts() {
+  const { t } = useTranslation()
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [viewContract, setViewContract] = useState<Contract | null>(null)
   const [generatingId, setGeneratingId] = useState<string | null>(null)
@@ -116,20 +118,20 @@ export function Contracts() {
   return (
     <div className="min-h-screen">
       <PageHeader
-        title="Contracts"
-        subtitle="Manage and track your contracts with AI assistance"
+        title={t('contracts.title')}
+        subtitle={t('contracts.subtitle')}
       />
       {/* Summary Cards */}
       <div className="px-8 pt-6 pb-4 ">
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {summaryCardConfig.map(({ key, label, color }) => (
+          {summaryCardConfig.map(({ key, labelKey, color }) => (
             <div
-              key={label}
+              key={labelKey}
               className="px-4 py-5 text-center bg-[#0A1628CC] rounded-xl border border-brand-accent-dark/30 overflow-hidden relative"
             >
               <CornerAccents />
               <p className="text-xs text-brand-accent-dark mb-2 uppercase tracking-wide">
-                {label}
+                {t(labelKey)}
               </p>
               <p className={cn('text-3xl font-bold', color)}>
                 {isLoading ? '—' : stats[key]}
@@ -145,7 +147,7 @@ export function Contracts() {
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-semibold text-brand-accent-dark">
-              All Contracts
+              {t('contracts.allContracts')}
             </h2>
             {isAdmin && (
               <Button
@@ -153,7 +155,7 @@ export function Contracts() {
                 onClick={() => setCreateDialogOpen(true)}
               >
                 <Plus className="w-4 h-4 mr-2" />
-                Create Contract
+                {t('contracts.createContract')}
               </Button>
             )}
           </div>
@@ -165,15 +167,15 @@ export function Contracts() {
           />
 
           {error && (
-            <p className="text-red-400 text-sm py-4">Failed to load contracts. Please try again.</p>
+            <p className="text-red-400 text-sm py-4">{t('contracts.failedToLoad')}</p>
           )}
 
           {/* Contract cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {isLoading ? (
-              <p className="text-brand-muted-text-dark col-span-2 py-8">Loading...</p>
+              <p className="text-brand-muted-text-dark col-span-2 py-8">{t('contracts.loading')}</p>
             ) : items.length === 0 ? (
-              <p className="text-brand-muted-text-dark col-span-2 py-8">No contracts found.</p>
+              <p className="text-brand-muted-text-dark col-span-2 py-8">{t('contracts.noneFound')}</p>
             ) : (
               items.map((contract) => (
                 <Card
@@ -190,7 +192,7 @@ export function Contracts() {
                       {contract.aiFlags != null && contract.aiFlags > 0 && (
                         <div
                           className="flex items-center gap-1 shrink-0 text-red-500"
-                          title={`${contract.aiFlags} AI risk flag(s)`}
+                          title={t('contracts.aiRiskFlags', { count: contract.aiFlags })}
                         >
                           <AlertTriangle className="w-4 h-4 shrink-0" />
                           <span className="text-sm font-medium">{contract.aiFlags}</span>
@@ -204,15 +206,15 @@ export function Contracts() {
 
                     <div className="space-y-2 mb-4">
                       <div className="flex justify-between items-baseline text-sm">
-                        <span className="text-brand-accent-dark/60">Type:</span>
+                        <span className="text-brand-accent-dark/60">{t('contracts.type')}</span>
                         <span className="text-brand-muted-text-dark">{contract.type}</span>
                       </div>
                       <div className="flex justify-between items-baseline text-sm">
-                        <span className="text-brand-accent-dark/60">Value:</span>
+                        <span className="text-brand-accent-dark/60">{t('contracts.value')}</span>
                         <span className="text-[#05DF72] font-medium">{contract.value}</span>
                       </div>
                       <div className="flex justify-between items-baseline text-sm">
-                        <span className="text-brand-accent-dark/60">Duration:</span>
+                        <span className="text-brand-accent-dark/60">{t('contracts.duration')}</span>
                         <span className="text-brand-muted-text-dark">
                           {formatDate(contract.startDate)} → {formatDate(contract.endDate)}
                         </span>
@@ -224,13 +226,13 @@ export function Contracts() {
                     {generatingId === contract.id && (
                       <div className="mb-3 flex items-center gap-2 text-xs text-brand-accent-dark animate-pulse">
                         <Sparkles className="w-3.5 h-3.5" />
-                        Generating AI draft…
+                        {t('contracts.generatingDraft')}
                       </div>
                     )}
                     {contract.content && generatingId !== contract.id && (
                       <div className="mb-3 flex items-center gap-2 text-xs text-emerald-400">
                         <Sparkles className="w-3.5 h-3.5" />
-                        AI Draft Ready
+                        {t('contracts.aiDraftReady')}
                       </div>
                     )}
 
@@ -250,14 +252,14 @@ export function Contracts() {
                             'bg-gray-500/20 border-gray-500/80 text-gray-400'
                         )}
                       >
-                        {CONTRACT_STATUS_LABELS[contract.status]}
+                        {t(CONTRACT_STATUS_KEYS[contract.status])}
                       </span>
                       <div className="flex items-center gap-3">
                         <button
                           type="button"
                           onClick={() => setViewContract(contract)}
                           className="text-brand-muted-text-dark hover:text-brand-accent-dark/80 transition-colors"
-                          aria-label="View"
+                          aria-label={t('contracts.ariaView')}
                         >
                           <Eye className="w-5 h-5" />
                         </button>
@@ -265,7 +267,7 @@ export function Contracts() {
                           <button
                             type="button"
                             className="text-brand-muted-text-dark hover:text-brand-accent-dark/80 transition-colors"
-                            aria-label="Edit"
+                            aria-label={t('contracts.ariaEdit')}
                           >
                             <Pencil className="w-5 h-5" />
                           </button>
@@ -282,7 +284,7 @@ export function Contracts() {
 
       <ViewContractDialog
         open={!!viewContract}
-        data={viewContract ? contractToViewData(viewContract) : null}
+        data={viewContract ? contractToViewData(viewContract, t) : null}
         onClose={() => setViewContract(null)}
       />
     </div>

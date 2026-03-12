@@ -255,7 +255,7 @@ export const updateContract = async (
  * @deprecated Backend doesn't implement DELETE endpoint yet
  */
 export const deleteContract = async (
-  id: string
+  _id: string
 ): Promise<ApiSuccessResponse<null>> => {
   // TODO: Backend doesn't have DELETE endpoint yet
   throw new Error('Delete contract endpoint not implemented in backend')

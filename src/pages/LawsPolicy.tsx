@@ -50,7 +50,7 @@ export function LawsPolicy() {
 
   const { data: listData, isLoading: listLoading, error: listError } = useLawsPolicies()
   const { data: statsData, isLoading: statsLoading } = useLawsPoliciesStats()
-  const { data: aiDocsData, isLoading: aiDocsLoading } = useAiDocs({
+  const { data: aiDocsData, isLoading: _aiDocsLoading } = useAiDocs({
     entityType: 'LawPolicy',
   })
   const {

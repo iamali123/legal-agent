@@ -15,13 +15,14 @@ import {
   useIsAdmin,
 } from '@/hooks/api'
 import type { LegislationJurisdiction, LegislationStatus } from '@/types/legislation.types'
+import { useTranslation } from 'react-i18next'
 
 /** Status options for PATCH /legislations/:id/status (backend enum Legislations.status) */
-const LEGISLATION_STATUS_OPTIONS: { value: LegislationStatus; label: string }[] = [
-  { value: 'draft', label: 'Draft' },
-  { value: 'active', label: 'Active' },
-  { value: 'published', label: 'Published' },
-  { value: 'amended', label: 'Amended' },
+const LEGISLATION_STATUS_OPTIONS: { value: LegislationStatus; labelKey: string }[] = [
+  { value: 'draft', labelKey: 'legislations.statusDraft' },
+  { value: 'active', labelKey: 'legislations.statusActive' },
+  { value: 'published', labelKey: 'legislations.statusPublished' },
+  { value: 'amended', labelKey: 'legislations.statusAmended' },
 ]
 
 function deriveLegislationStats(items: { status: string; aiFlags: { type: string } }[]) {
@@ -35,14 +36,15 @@ function deriveLegislationStats(items: { status: string; aiFlags: { type: string
 }
 
 const summaryCardConfig = [
-  { key: 'total' as const, label: 'TOTAL LEGISLATIONS', color: 'text-brand-accent-dark' },
-  { key: 'draft' as const, label: 'DRAFT', color: 'text-orange-500' },
-  { key: 'published' as const, label: 'PUBLISHED', color: 'text-green-500' },
-  { key: 'amendmentsPending' as const, label: 'AMENDMENTS PENDING', color: 'text-purple-500' },
-  { key: 'aiFlaggedRisks' as const, label: 'AI-FLAGGED RISKS', color: 'text-red-500' },
+  { key: 'total' as const, labelKey: 'legislations.total', color: 'text-brand-accent-dark' },
+  { key: 'draft' as const, labelKey: 'legislations.draft', color: 'text-orange-500' },
+  { key: 'published' as const, labelKey: 'legislations.published', color: 'text-green-500' },
+  { key: 'amendmentsPending' as const, labelKey: 'legislations.amendmentsPending', color: 'text-purple-500' },
+  { key: 'aiFlaggedRisks' as const, labelKey: 'legislations.aiFlaggedRisks', color: 'text-red-500' },
 ]
 
 export function Legislations() {
+  const { t } = useTranslation()
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [viewLegislationId, setViewLegislationId] = useState<string | null>(null)
   const isAdmin = useIsAdmin()
@@ -120,20 +122,20 @@ export function Legislations() {
   return (
     <div className="min-h-screen">
       <PageHeader
-        title="Legislations"
-        subtitle="Manage and draft legislations with AI assistance"
+        title={t('legislations.title')}
+        subtitle={t('legislations.subtitle')}
       />
       {/* Summary Cards */}
       <div className="px-8 pt-6 pb-4 ">
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
-          {summaryCardConfig.map(({ key, label, color }) => (
+          {summaryCardConfig.map(({ key, labelKey, color }) => (
             <div
-              key={label}
+              key={labelKey}
               className="px-4 py-5 text-center bg-[#0A1628CC] rounded-xl border border-brand-accent-dark/30 overflow-hidden relative"
             >
               <CornerAccents />
               <p className="text-xs text-brand-accent-dark mb-2 uppercase tracking-wide">
-                {label}
+                {t(labelKey)}
               </p>
               <p className={cn('text-3xl font-bold', color)}>
                 {isLoading ? '—' : stats[key]}
@@ -149,12 +151,12 @@ export function Legislations() {
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-semibold text-brand-accent-dark">
-              All Legislations
+              {t('legislations.allLegislations')}
             </h2>
             {isAdmin && (
               <Button onClick={() => setCreateDialogOpen(true)}>
                 <Plus className="w-4 h-4 mr-2" />
-                Create Legislation
+                {t('legislations.createLegislation')}
               </Button>
             )}
           </div>
@@ -167,7 +169,7 @@ export function Legislations() {
           />
 
           {error && (
-            <p className="text-red-400 text-sm py-4">Failed to load legislations. Please try again.</p>
+            <p className="text-red-400 text-sm py-4">{t('legislations.failedToLoad')}</p>
           )}
 
           {/* Table */}
@@ -182,22 +184,22 @@ export function Legislations() {
                 >
                   <tr>
                     <th className="px-6 py-4 text-left text-sm font-semibold text-brand-accent-dark uppercase tracking-wider">
-                      Title
+                      {t('legislations.tableTitle')}
                     </th>
                     <th className="px-6 py-4 text-left text-sm font-semibold text-brand-accent-dark uppercase tracking-wider">
-                      Jurisdiction
+                      {t('legislations.tableJurisdiction')}
                     </th>
                     <th className="px-6 py-4 text-left text-sm font-semibold text-brand-accent-dark uppercase tracking-wider">
-                      Status
+                      {t('legislations.tableStatus')}
                     </th>
                     <th className="px-6 py-4 text-left text-sm font-semibold text-brand-accent-dark uppercase tracking-wider">
-                      Last Updated
+                      {t('legislations.tableLastUpdated')}
                     </th>
                     <th className="px-6 py-4 text-left text-sm font-semibold text-brand-accent-dark uppercase tracking-wider">
-                      AI Flags
+                      {t('legislations.tableAiFlags')}
                     </th>
                     <th className="px-6 py-4 text-left text-sm font-semibold text-brand-accent-dark uppercase tracking-wider">
-                      Actions
+                      {t('legislations.tableActions')}
                     </th>
                   </tr>
                 </thead>
@@ -205,13 +207,13 @@ export function Legislations() {
                   {isLoading ? (
                     <tr>
                       <td colSpan={6} className="px-6 py-8 text-center text-brand-muted-text-dark">
-                        Loading...
+                        {t('legislations.loading')}
                       </td>
                     </tr>
                   ) : items.length === 0 ? (
                     <tr>
                       <td colSpan={6} className="px-6 py-8 text-center text-brand-muted-text-dark">
-                        No legislations found.
+                        {t('legislations.noneFound')}
                       </td>
                     </tr>
                   ) : (
@@ -248,7 +250,7 @@ export function Legislations() {
                             >
                               {LEGISLATION_STATUS_OPTIONS.map((opt) => (
                                 <option key={opt.value} value={opt.value} className="bg-[#0A1628] text-white">
-                                  {opt.label}
+                                  {t(opt.labelKey)}
                                 </option>
                               ))}
                             </select>
@@ -276,7 +278,7 @@ export function Legislations() {
                           {legislation.aiFlags?.type === 'clean' ? (
                             <div className="flex items-center gap-1">
                               <CheckCircle2 className="w-4 h-4 text-green-500" />
-                              <span className="text-xs text-green-500">Clean</span>
+                              <span className="text-xs text-green-500">{t('legislations.clean')}</span>
                             </div>
                           ) : (
                             <div className="flex items-center gap-1">
@@ -293,16 +295,16 @@ export function Legislations() {
                               type="button"
                               onClick={() => setViewLegislationId(legislation.id)}
                               className="text-brand-muted-text-dark hover:text-brand-accent-dark transition-colors"
-                              aria-label="View details"
+                              aria-label={t('legislations.ariaViewDetails')}
                             >
                               <Eye className="w-4 h-4" />
                             </button>
                             {isAdmin && (
                               <>
-                                <button className="text-brand-muted-text-dark hover:text-brand-accent-dark transition-colors" aria-label="Edit">
+                                <button className="text-brand-muted-text-dark hover:text-brand-accent-dark transition-colors" aria-label={t('legislations.ariaEdit')}>
                                   <Pencil className="w-4 h-4" />
                                 </button>
-                                <button className="text-brand-muted-text-dark hover:text-brand-accent-dark transition-colors" aria-label="AI draft">
+                                <button className="text-brand-muted-text-dark hover:text-brand-accent-dark transition-colors" aria-label={t('legislations.ariaAiDraft')}>
                                   <Sparkles className="w-5 h-5 text-brand-accent-dark" />
                                 </button>
                               </>

@@ -1,5 +1,6 @@
 import { BookOpen, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useTranslation } from 'react-i18next'
 
 export interface ViewDocumentDialogData {
   id: string
@@ -18,13 +19,12 @@ interface ViewDocumentDialogProps {
   onClose: () => void
 }
 
-const gradientTitle = 'linear-gradient(180deg, #00D9FF 0%, #00A8B5 100%)'
-
 export function ViewDocumentDialog({
   open,
   data,
   onClose,
 }: ViewDocumentDialogProps) {
+  const { t } = useTranslation()
   if (!open || !data) return null
 
   return (
@@ -60,25 +60,25 @@ export function ViewDocumentDialog({
           <div className="grid grid-cols-2 gap-3">
           <div className="rounded-xl bg-[#0A162880] border border-brand-accent-dark/20 px-4 py-3">
             <p className="text-xs text-brand-accent-dark uppercase tracking-wide mb-1">
-              Authority
+              {t('viewDocument.authority')}
             </p>
             <p className="text-sm font-medium text-white">{data.authority}</p>
           </div>
           <div className="rounded-xl bg-[#0A162880] border border-brand-accent-dark/20 px-4 py-3">
             <p className="text-xs text-brand-accent-dark uppercase tracking-wide mb-1">
-              Status
+              {t('viewDocument.status')}
             </p>
             <p className="text-sm font-medium text-white">{data.status}</p>
           </div>
           <div className="rounded-xl bg-[#0A162880] border border-brand-accent-dark/20 px-4 py-3">
             <p className="text-xs text-brand-accent-dark uppercase tracking-wide mb-1">
-              Effective Date
+              {t('viewDocument.effectiveDate')}
             </p>
             <p className="text-sm font-medium text-white">{data.effectiveDate}</p>
           </div>
           <div className="rounded-xl bg-[#0A162880] border border-brand-accent-dark/20 px-4 py-3">
             <p className="text-xs text-brand-accent-dark uppercase tracking-wide mb-1">
-              Category
+              {t('viewDocument.category')}
             </p>
             <p className="text-sm font-medium text-white">{data.category}</p>
           </div>
@@ -88,7 +88,7 @@ export function ViewDocumentDialog({
           <div className="mt-4">
           <div className="rounded-xl bg-[#0A162880] border border-brand-accent-dark/20 p-4">
             <p className="text-xs text-brand-accent-dark uppercase tracking-wide mb-2 flex items-center gap-1.5">
-              AI Summary
+              {t('viewDocument.aiSummary')}
             </p>
             <p className="text-sm text-white/70 leading-relaxed flex items-start gap-2">
             <Sparkles className="w-5 h-5 text-brand-accent-dark" />
@@ -105,7 +105,7 @@ export function ViewDocumentDialog({
             onClick={onClose}
             className="min-w-[120px]"
           >
-            Close
+            {t('common.close')}
           </Button>
         </div>
       </div>

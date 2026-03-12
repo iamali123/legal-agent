@@ -4,8 +4,15 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
+import { useTranslation } from 'react-i18next'
 
-const CONTRACT_TYPE_OPTIONS = ['Service Agreement', 'Lease', 'License', 'NDA', 'Other']
+const CONTRACT_TYPE_OPTIONS: { value: string; labelKey: string }[] = [
+  { value: 'Service Agreement', labelKey: 'createContract.serviceAgreement' },
+  { value: 'Lease', labelKey: 'createContract.lease' },
+  { value: 'License', labelKey: 'createContract.license' },
+  { value: 'NDA', labelKey: 'createContract.nda' },
+  { value: 'Other', labelKey: 'createContract.other' },
+]
 
 export interface CreateContractFormData {
   title: string
@@ -32,6 +39,7 @@ export function CreateContractDialog({
   onClose,
   onGenerateDraft,
 }: CreateContractDialogProps) {
+  const { t } = useTranslation()
   const [title, setTitle] = useState('')
   const [contractType, setContractType] = useState('')
   const [counterparty, setCounterparty] = useState('')
@@ -95,10 +103,10 @@ export function CreateContractDialog({
               </div>
               <div>
                 <h2 className="text-xl font-semibold text-white">
-                  Create Contract
+                  {t('createContract.title')}
                 </h2>
                 <p className="text-sm text-brand-muted-text-dark">
-                  Create a new contract with AI assistance
+                  {t('createContract.subtitle')}
                 </p>
               </div>
             </div>
@@ -107,7 +115,7 @@ export function CreateContractDialog({
             type="button"
             onClick={handleClose}
             className="p-2 rounded-lg text-brand-muted-text-dark hover:text-foreground transition-colors shrink-0"
-            aria-label="Close"
+            aria-label={t('common.close')}
           >
             <X className="w-5 h-5" />
           </button>
@@ -117,20 +125,20 @@ export function CreateContractDialog({
         <div className="px-6 pb-4 space-y-3 flex-1 min-h-0 overflow-y-auto sidebar-nav-scroll">
           <div className="space-y-1">
             <Label htmlFor="contract-title" className="text-brand-accent-dark">
-              Contract Title
+              {t('createContract.contractTitle')}
             </Label>
             <Input
               id="contract-title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g., IT Services Agreement"
+              placeholder={t('createContract.titlePlaceholder')}
               className="rounded-lg bg-[#0A162880] border border-brand-accent-dark/30"
             />
           </div>
 
           <div className="space-y-1">
             <Label htmlFor="contract-type" className="text-brand-accent-dark">
-              Contract Type
+              {t('createContract.contractType')}
             </Label>
             <div className="relative">
               <select
@@ -142,10 +150,10 @@ export function CreateContractDialog({
                   'text-sm text-foreground'
                 )}
               >
-                <option value="">Select type</option>
+                <option value="">{t('createContract.selectType')}</option>
                 {CONTRACT_TYPE_OPTIONS.map((opt) => (
-                  <option key={opt} value={opt}>
-                    {opt}
+                  <option key={opt.value} value={opt.value}>
+                    {t(opt.labelKey)}
                   </option>
                 ))}
               </select>
@@ -155,13 +163,13 @@ export function CreateContractDialog({
 
           <div className="space-y-1">
             <Label htmlFor="contract-counterparty" className="text-brand-accent-dark">
-              Counterparty
+              {t('createContract.counterparty')}
             </Label>
             <Input
               id="contract-counterparty"
               value={counterparty}
               onChange={(e) => setCounterparty(e.target.value)}
-              placeholder="Company/Individual name"
+              placeholder={t('createContract.counterpartyPlaceholder')}
               className="rounded-lg bg-[#0A162880] border border-brand-accent-dark/30"
             />
           </div>
@@ -169,7 +177,7 @@ export function CreateContractDialog({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1">
               <Label htmlFor="contract-value" className="text-brand-accent-dark">
-                Contract Value
+                {t('createContract.contractValue')}
               </Label>
               <Input
                 id="contract-value"
@@ -178,13 +186,13 @@ export function CreateContractDialog({
                 step={0.01}
                 value={value}
                 onChange={(e) => setValue(e.target.value)}
-                placeholder="e.g., 500000"
+                placeholder={t('createContract.valuePlaceholder')}
                 className="rounded-lg bg-[#0A162880] border border-brand-accent-dark/30"
               />
             </div>
             <div className="space-y-1">
               <Label htmlFor="contract-currency" className="text-brand-accent-dark">
-                Currency
+                {t('createContract.currency')}
               </Label>
               <select
                 id="contract-currency"
@@ -206,7 +214,7 @@ export function CreateContractDialog({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1">
               <Label htmlFor="contract-start-date" className="text-brand-accent-dark">
-                Start Date
+                {t('createContract.startDate')}
               </Label>
               <Input
                 id="contract-start-date"
@@ -218,7 +226,7 @@ export function CreateContractDialog({
             </div>
             <div className="space-y-1">
               <Label htmlFor="contract-end-date" className="text-brand-accent-dark">
-                End Date
+                {t('createContract.endDate')}
               </Label>
               <Input
                 id="contract-end-date"
@@ -233,7 +241,7 @@ export function CreateContractDialog({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1">
               <Label htmlFor="contract-duration" className="text-brand-accent-dark">
-                Duration (months)
+                {t('createContract.durationMonths')}
               </Label>
               <Input
                 id="contract-duration"
@@ -241,13 +249,13 @@ export function CreateContractDialog({
                 min={1}
                 value={durationMonths}
                 onChange={(e) => setDurationMonths(e.target.value)}
-                placeholder="12"
+                placeholder={t('createContract.durationPlaceholder')}
                 className="rounded-lg bg-[#0A162880] border border-brand-accent-dark/30"
               />
             </div>
             <div className="space-y-1">
               <Label htmlFor="contract-status" className="text-brand-accent-dark">
-                Status
+                {t('createContract.status')}
               </Label>
               <select
                 id="contract-status"
@@ -258,23 +266,23 @@ export function CreateContractDialog({
                   'text-sm text-foreground'
                 )}
               >
-                <option value="draft">Draft</option>
-                <option value="pending_approval">Pending Approval</option>
-                <option value="approved">Approved</option>
-                <option value="active">Active</option>
+                <option value="draft">{t('contracts.draft')}</option>
+                <option value="pending_approval">{t('contracts.pendingApproval')}</option>
+                <option value="approved">{t('contracts.approved')}</option>
+                <option value="active">{t('contracts.active')}</option>
               </select>
             </div>
           </div>
 
           <div className="space-y-1">
             <Label htmlFor="contract-key-terms" className="text-brand-accent-dark">
-              Key Terms & Requirements
+              {t('createContract.keyTerms')}
             </Label>
             <textarea
               id="contract-key-terms"
               value={keyTerms}
               onChange={(e) => setKeyTerms(e.target.value)}
-              placeholder='Describe key terms as JSON object (e.g., {"autoRenew": true, "terminationNoticeDays": 30}) or plain text'
+              placeholder={t('createContract.keyTermsPlaceholder')}
               rows={3}
               className={cn(
                 'flex w-full rounded-lg bg-[#0A162880] border border-brand-accent-dark/30 px-3 py-2',
@@ -286,13 +294,13 @@ export function CreateContractDialog({
 
           <div className="space-y-1">
             <Label htmlFor="contract-content" className="text-brand-accent-dark">
-              Content (Optional)
+              {t('createContract.contentOptional')}
             </Label>
             <textarea
               id="contract-content"
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              placeholder="Contract content text..."
+              placeholder={t('createContract.contentPlaceholder')}
               rows={4}
               className={cn(
                 'flex w-full rounded-lg bg-[#0A162880] border border-brand-accent-dark/30 px-3 py-2',
@@ -307,11 +315,11 @@ export function CreateContractDialog({
         {/* Actions - Cancel (outline) + Generate Draft (gradient with Sparkles) */}
         <div className="grid grid-cols-2 gap-3 p-6 pt-2 shrink-0">
           <Button variant="outline" onClick={handleClose} className="bg-transparent">
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button onClick={handleGenerateDraft}>
             <Sparkles className="w-4 h-4 mr-2" />
-            Generate Draft
+            {t('createContract.generateDraft')}
           </Button>
         </div>
       </div>

@@ -28,14 +28,12 @@ import { useQueryClient } from '@tanstack/react-query'
 import { aiAssistantKeys } from '@/hooks/api/useAIAssistant'
 import { CheckCompliancePanel } from '@/components/CheckCompliancePanel'
 import { SummarizePanel } from '@/components/SummarizePanel'
+import { useTranslation } from 'react-i18next'
 
 const SUGGESTED_ACTIONS = [
-  { label: 'Summarize', icon: FileText },
-  { label: 'Check Compliance', icon: CheckCircle2 },
+  { labelKey: 'ai.summarize', icon: FileText },
+  { labelKey: 'ai.checkCompliance', icon: CheckCircle2 },
 ] as const
-
-const WELCOME_MESSAGE =
-  "Hi! I'm your AI Legal Assistant. How can I help you today? You can ask me to summarize documents, analyze risks, check compliance, or draft legal text."
 
 interface AILegalAssistantChatProps {
   isOpen?: boolean
@@ -56,6 +54,7 @@ export function AILegalAssistantChat({
   context = 'DASHBOARD',
   embedded = false,
 }: AILegalAssistantChatProps) {
+  const { t } = useTranslation()
   const queryClient = useQueryClient()
   const [input, setInput] = useState('')
   const [conversationId, setConversationId] = useState<string | null>(null)
@@ -133,7 +132,7 @@ export function AILegalAssistantChat({
     async (title?: string): Promise<string> => {
       if (conversationId) return conversationId
       const conv = await createConversationMutation.mutateAsync({
-        title: title?.slice(0, 60) || 'New Conversation',
+        title: title?.slice(0, 60) || t('ai.newConversation'),
         context: context ? { topic: context } : undefined,
       })
       const id = conv.data.id
@@ -185,7 +184,7 @@ export function AILegalAssistantChat({
       try {
         const convId = await ensureConversation(
           resultText.split('\n')[0].replace(/[*_📄✅🔴🟡🔵💚]/g, '').trim().slice(0, 60) ||
-            'Analysis Result'
+            t('ai.analysisResult')
         )
         injectMutation.mutate({ conversationId: convId, content: resultText })
       } catch {
@@ -213,10 +212,10 @@ export function AILegalAssistantChat({
     setWaitingForAI(false)
   }
 
-  const handleSuggestedAction = (label: string) => {
-    if (label === 'Check Compliance') { setActiveMode('check-compliance'); return }
-    if (label === 'Summarize') { setActiveMode('summarize'); return }
-    setInput((prev) => (prev ? `${prev} ${label}` : label))
+  const handleSuggestedAction = (labelKey: string) => {
+    if (labelKey === t('ai.checkCompliance')) { setActiveMode('check-compliance'); return }
+    if (labelKey === t('ai.summarize')) { setActiveMode('summarize'); return }
+    setInput((prev) => (prev ? `${prev} ${labelKey}` : labelKey))
   }
 
   // ── Render helpers ─────────────────────────────────────────────────────────
@@ -237,9 +236,9 @@ export function AILegalAssistantChat({
           <div className="flex items-start gap-2 max-w-[85%]">
             <Sparkles className="w-4 h-4 text-brand-accent-dark shrink-0 mt-0.5" />
             <div>
-              <p className="text-xs font-medium text-brand-accent-dark mb-1">AI Assistant</p>
+              <p className="text-xs font-medium text-brand-accent-dark mb-1">{t('app.aiAssistant')}</p>
               <div className="rounded-xl rounded-tl-sm bg-[#0A1628E5] border border-brand-accent-dark/20 px-4 py-3 text-sm text-foreground">
-                {WELCOME_MESSAGE}
+                {t('ai.welcomeMessage')}
               </div>
             </div>
           </div>
@@ -249,7 +248,7 @@ export function AILegalAssistantChat({
       {isLoadingMessages && conversationId && (
         <div className="flex gap-2">
           <Sparkles className="w-4 h-4 text-brand-accent-dark shrink-0 mt-0.5" />
-          <p className="text-sm text-brand-muted-text-dark">Loading conversation…</p>
+          <p className="text-sm text-brand-muted-text-dark">{t('ai.loadingConversation')}</p>
         </div>
       )}
 
@@ -267,7 +266,7 @@ export function AILegalAssistantChat({
             <div className="flex items-start gap-2 max-w-[85%]">
               <Sparkles className="w-4 h-4 text-brand-accent-dark shrink-0 mt-0.5" />
               <div>
-                <p className="text-xs font-medium text-brand-accent-dark mb-1">AI Assistant</p>
+                <p className="text-xs font-medium text-brand-accent-dark mb-1">{t('app.aiAssistant')}</p>
                 <div className="rounded-xl rounded-tl-sm bg-[#0A1628E5] border border-brand-accent-dark/20 px-4 py-3 text-sm text-foreground whitespace-pre-wrap">
                   {msg.content}
                 </div>
@@ -289,7 +288,7 @@ export function AILegalAssistantChat({
             <div>
               <p className="text-xs font-medium text-brand-accent-dark mb-1">AI Assistant</p>
               <div className="rounded-xl rounded-tl-sm bg-[#0A1628E5] border border-brand-accent-dark/20 px-4 py-3 text-sm text-foreground whitespace-pre-wrap">
-                {streamingContent || 'Thinking…'}
+                {streamingContent || t('ai.thinking')}
               </div>
             </div>
           </div>
@@ -300,18 +299,18 @@ export function AILegalAssistantChat({
 
   const suggestedActionsBar = (size: 'sm' | 'base') => (
     <div className={cn('flex flex-wrap gap-2', size === 'base' ? 'px-6 py-4' : 'px-4 py-2')}>
-      {SUGGESTED_ACTIONS.map(({ label, icon: Icon }) => (
+      {SUGGESTED_ACTIONS.map(({ labelKey, icon: Icon }) => (
         <button
-          key={label}
+          key={labelKey}
           type="button"
-          onClick={() => handleSuggestedAction(label)}
+          onClick={() => handleSuggestedAction(t(labelKey))}
           className={cn(
             'inline-flex items-center gap-2 rounded-xl bg-white/10 text-brand-accent-dark border border-brand-accent-dark/20 hover:bg-white/20 transition-colors',
             size === 'base' ? 'px-4 py-2 text-sm' : 'px-2 py-1 text-xs'
           )}
         >
           <Icon className="w-4 h-4 text-brand-accent-dark" />
-          {label}
+          {t(labelKey)}
         </button>
       ))}
     </div>
@@ -329,7 +328,7 @@ export function AILegalAssistantChat({
         <Sparkles className="w-5 h-5 text-brand-accent-dark shrink-0" />
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <h2 className="font-semibold text-white text-base">AI Legal Assistant</h2>
+            <h2 className="font-semibold text-white text-base">{t('ai.legalAssistant')}</h2>
             {embedded && <div className="w-2 h-2 rounded-full bg-green-400" />}
           </div>
           <p className="text-xs text-brand-accent-dark/60 truncate uppercase">{context}</p>
@@ -342,8 +341,8 @@ export function AILegalAssistantChat({
           type="button"
           onClick={handleNewChat}
           className="p-2 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-colors"
-          aria-label="New chat"
-          title="New chat"
+          aria-label={t('ai.ariaNewChat')}
+          title={t('ai.ariaNewChat')}
         >
           <Plus className="w-4 h-4" />
         </button>
@@ -354,8 +353,8 @@ export function AILegalAssistantChat({
             type="button"
             onClick={() => setShowHistory((v) => !v)}
             className="p-2 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-colors flex items-center gap-1"
-            aria-label="Chat history"
-            title="Chat history"
+            aria-label={t('ai.ariaChatHistory')}
+            title={t('ai.ariaChatHistory')}
           >
             <History className="w-4 h-4" />
             {conversationsList.length > 0 && (
@@ -366,7 +365,7 @@ export function AILegalAssistantChat({
           {showHistory && conversationsList.length > 0 && (
             <div className="absolute right-0 top-full mt-1 w-64 bg-[#0A1628] border border-white/10 rounded-xl shadow-xl z-50 overflow-hidden">
               <div className="px-3 py-2 text-[10px] text-white/40 uppercase font-semibold border-b border-white/10">
-                Recent Conversations
+                {t('ai.recentConversations')}
               </div>
               <div className="max-h-60 overflow-y-auto">
                 {conversationsList.map((conv) => (
@@ -381,7 +380,7 @@ export function AILegalAssistantChat({
                         : 'text-white/70'
                     )}
                   >
-                    {conv.title || 'Untitled Chat'}
+                    {conv.title || t('ai.untitledChat')}
                   </button>
                 ))}
               </div>
@@ -395,7 +394,7 @@ export function AILegalAssistantChat({
               type="button"
               onClick={onExpandToggle}
               className="p-2 rounded-lg text-white/80 hover:text-white hover:bg-white/10 transition-colors"
-              aria-label={isExpanded ? 'Minimize' : 'Expand'}
+              aria-label={isExpanded ? t('ai.ariaMinimize') : t('ai.ariaExpand')}
             >
               {isExpanded ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
             </button>
@@ -403,7 +402,7 @@ export function AILegalAssistantChat({
               type="button"
               onClick={onClose}
               className="p-2 rounded-lg text-white/80 hover:text-white hover:bg-white/10 transition-colors"
-              aria-label="Close"
+              aria-label={t('ai.ariaClose')}
             >
               <X className="w-5 h-5" />
             </button>
@@ -462,7 +461,7 @@ export function AILegalAssistantChat({
             <div className="flex gap-2">
               <button
                 type="button"
-                aria-label="Attach file"
+                aria-label={t('ai.ariaAttachFile')}
                 className="text-brand-accent-dark border border-brand-accent-dark/20 rounded-xl p-2 hover:bg-brand-accent-dark/20 transition-colors"
               >
                 <Paperclip className="w-5 h-5" />
@@ -471,14 +470,14 @@ export function AILegalAssistantChat({
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
-                placeholder="Ask me anything…"
+                placeholder={t('ai.askPlaceholder')}
                 className="flex-1 rounded-xl border-border bg-background"
               />
               <Button
                 type="button"
                 size="icon"
                 className="shrink-0"
-                aria-label="Send"
+                aria-label={t('ai.ariaSend')}
                 onClick={handleSend}
                 disabled={!input.trim() || isBusy}
               >

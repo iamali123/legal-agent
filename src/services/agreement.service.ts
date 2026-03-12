@@ -15,7 +15,6 @@ import type {
   UpdateAgreementRequest,
   AgreementStats,
   AgreementListParams,
-  AgreementType,
 } from '@/types/agreement.types'
 
 /**

@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import type { CreateLegislationSectionRequest } from '@/types/legislation.types'
+import { useTranslation } from 'react-i18next'
 
 export interface AddLegislationSectionDialogProps {
   open: boolean
@@ -16,27 +17,29 @@ export interface AddLegislationSectionDialogProps {
 }
 
 function validate(
-  data: { title: string; content: string; order: string }
+  data: { title: string; content: string; order: string },
+  t: (k: string) => string
 ): { valid: boolean; errors: Record<string, string> } {
   const errors: Record<string, string> = {}
-  if (!data.title.trim()) errors.title = 'Title is required'
-  if (!data.content.trim()) errors.content = 'Content is required'
+  if (!data.title.trim()) errors.title = t('addSection.titleRequired')
+  if (!data.content.trim()) errors.content = t('addSection.contentRequired')
   const orderNum = Number(data.order)
   if (data.order === '' || Number.isNaN(orderNum) || orderNum < 1 || !Number.isInteger(orderNum)) {
-    errors.order = 'Order must be a positive integer (e.g. 1, 2, 3)'
+    errors.order = t('addSection.orderError')
   }
   return { valid: Object.keys(errors).length === 0, errors }
 }
 
 export function AddLegislationSectionDialog({
   open,
-  legislationId,
+  legislationId: _legislationId,
   legislationTitle,
   onClose,
   onSubmit,
   isPending = false,
   error: externalError = null,
 }: AddLegislationSectionDialogProps) {
+  const { t } = useTranslation()
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
   const [order, setOrder] = useState('1')
@@ -54,7 +57,7 @@ export function AddLegislationSectionDialog({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    const validation = validate({ title, content, order })
+    const validation = validate({ title, content, order }, t)
     if (!validation.valid) {
       setErrors(validation.errors)
       return
@@ -89,7 +92,7 @@ export function AddLegislationSectionDialog({
                 <FileText className="w-5 h-5 text-brand-accent-dark" />
               </div>
               <div className="min-w-0">
-                <h2 className="text-xl font-semibold text-white">Add Section</h2>
+                <h2 className="text-xl font-semibold text-white">{t('addSection.title')}</h2>
                 {legislationTitle && (
                   <p className="text-sm text-brand-muted-text-dark truncate mt-0.5">
                     {legislationTitle}
@@ -101,7 +104,7 @@ export function AddLegislationSectionDialog({
               type="button"
               onClick={handleClose}
               className="p-1.5 rounded-lg text-brand-muted-text-dark hover:bg-white/10 hover:text-white transition-colors shrink-0"
-              aria-label="Close"
+              aria-label={t('common.close')}
             >
               <X className="w-5 h-5" />
             </button>
@@ -109,7 +112,7 @@ export function AddLegislationSectionDialog({
 
           {success && (
             <div className="mb-4 rounded-lg bg-green-500/10 border border-green-500/30 px-4 py-3 text-sm text-green-400">
-              Section added successfully. You can add another or close.
+              {t('addSection.sectionAddedSuccess')}
             </div>
           )}
 
@@ -127,7 +130,7 @@ export function AddLegislationSectionDialog({
         <form id="add-section-form" onSubmit={handleSubmit} className="px-6 pb-4 flex-1 min-h-0 overflow-y-auto sidebar-nav-scroll space-y-4">
             <div>
               <Label htmlFor="section-title" className="text-white">
-                Title
+                {t('addSection.titleLabel')}
               </Label>
               <Input
                 id="section-title"
@@ -136,7 +139,7 @@ export function AddLegislationSectionDialog({
                   setTitle(e.target.value)
                   setErrors((prev) => ({ ...prev, title: '' }))
                 }}
-                placeholder="e.g. Chapter 1 - Definitions"
+                placeholder={t('addSection.titlePlaceholder')}
                 className="mt-1.5 bg-white/5 border-brand-accent-dark/30 text-white placeholder:text-brand-muted-text-dark"
                 disabled={isPending}
                 autoFocus
@@ -148,7 +151,7 @@ export function AddLegislationSectionDialog({
 
             <div>
               <Label htmlFor="section-content" className="text-white">
-                Content
+                {t('addSection.contentLabel')}
               </Label>
               <textarea
                 id="section-content"
@@ -157,7 +160,7 @@ export function AddLegislationSectionDialog({
                   setContent(e.target.value)
                   setErrors((prev) => ({ ...prev, content: '' }))
                 }}
-                placeholder="Section text..."
+                placeholder={t('addSection.contentPlaceholder')}
                 rows={5}
                 className="mt-1.5 w-full rounded-md border border-brand-accent-dark/30 bg-white/5 text-white placeholder:text-brand-muted-text-dark px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-accent-dark resize-y min-h-[100px]"
                 disabled={isPending}
@@ -169,7 +172,7 @@ export function AddLegislationSectionDialog({
 
             <div>
               <Label htmlFor="section-order" className="text-white">
-                Order
+                {t('addSection.orderLabel')}
               </Label>
               <Input
                 id="section-order"
@@ -199,7 +202,7 @@ export function AddLegislationSectionDialog({
               disabled={isPending}
               className="flex-1 border-brand-accent-dark/30 text-white hover:bg-white/10"
             >
-              Close
+              {t('common.close')}
             </Button>
             <Button
               type="submit"
@@ -207,7 +210,7 @@ export function AddLegislationSectionDialog({
               disabled={isPending}
               className="flex-1 bg-brand-accent-dark text-[#0A1628] hover:bg-brand-accent-dark/90"
             >
-              {isPending ? 'Adding...' : 'Add Section'}
+              {isPending ? t('addSection.adding') : t('addSection.addSection')}
             </Button>
           </div>
         </div>

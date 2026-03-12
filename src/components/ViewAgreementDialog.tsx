@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/button'
 import { formatDate } from '@/lib/utils'
 import { Sparkles, Calendar } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 export interface ViewAgreementDialogData {
   id: string
@@ -24,6 +25,7 @@ export function ViewAgreementDialog({
   data,
   onClose,
 }: ViewAgreementDialogProps) {
+  const { t } = useTranslation()
   if (!open || !data) return null
 
   return (
@@ -47,18 +49,18 @@ export function ViewAgreementDialog({
           {/* Meta grid */}
           <div className="grid grid-cols-2 gap-3">
             <div className="rounded-xl bg-[#0A162880] border border-brand-accent-dark/20 px-4 py-3">
-              <p className="text-xs text-brand-accent-dark uppercase tracking-wide mb-1">Status</p>
+              <p className="text-xs text-brand-accent-dark uppercase tracking-wide mb-1">{t('viewAgreement.status')}</p>
               <p className="text-sm font-medium text-white">{data.status}</p>
             </div>
             <div className="rounded-xl bg-[#0A162880] border border-brand-accent-dark/20 px-4 py-3">
-              <p className="text-xs text-brand-accent-dark uppercase tracking-wide mb-1">Date</p>
+              <p className="text-xs text-brand-accent-dark uppercase tracking-wide mb-1">{t('viewAgreement.date')}</p>
               <p className="text-sm font-medium text-white flex items-center gap-1.5">
                 <Calendar className="w-3.5 h-3.5 opacity-60" />
                 {data.date ? formatDate(data.date) : '—'}
               </p>
             </div>
             <div className="rounded-xl bg-[#0A162880] border border-brand-accent-dark/20 px-4 py-3 col-span-2">
-              <p className="text-xs text-brand-accent-dark uppercase tracking-wide mb-1">Parties</p>
+              <p className="text-xs text-brand-accent-dark uppercase tracking-wide mb-1">{t('viewAgreement.parties')}</p>
               <p className="text-sm font-medium text-white">{data.parties}</p>
             </div>
           </div>
@@ -67,7 +69,7 @@ export function ViewAgreementDialog({
           {data.purposeAndObjectives && (
             <div className="rounded-xl bg-[#0A162880] border border-brand-accent-dark/20 px-4 py-3">
               <p className="text-xs text-brand-accent-dark uppercase tracking-wide mb-2">
-                Purpose & Objectives
+                {t('viewAgreement.purposeObjectives')}
               </p>
               <p className="text-sm text-white/80 whitespace-pre-wrap">{data.purposeAndObjectives}</p>
             </div>
@@ -79,7 +81,7 @@ export function ViewAgreementDialog({
               <div className="flex items-center gap-2 px-4 py-3 border-b border-brand-accent-dark/10">
                 <Sparkles className="w-4 h-4 text-brand-accent-dark" />
                 <p className="text-xs text-brand-accent-dark uppercase tracking-wide font-semibold">
-                  Agreement Draft
+                  {t('viewAgreement.agreementDraft')}
                 </p>
               </div>
               <div className="px-4 py-4">
@@ -91,7 +93,7 @@ export function ViewAgreementDialog({
           ) : (
             <div className="rounded-xl border border-dashed border-brand-accent-dark/20 px-4 py-6 text-center text-white/40 text-sm">
               <Sparkles className="w-6 h-6 mx-auto mb-2 opacity-30" />
-              No AI draft yet. Click "Generate Draft" on the agreement card to generate one.
+              {t('viewAgreement.noDraftYet')}
             </div>
           )}
         </div>
@@ -99,7 +101,7 @@ export function ViewAgreementDialog({
         {/* Footer */}
         <div className="p-6 pt-2 flex shrink-0 border-t border-brand-accent-dark/10">
           <Button type="button" onClick={onClose} className="min-w-[120px]">
-            Close
+            {t('common.close')}
           </Button>
         </div>
       </div>

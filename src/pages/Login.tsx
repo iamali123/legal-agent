@@ -7,10 +7,12 @@ import loginVideo from '@/assets/login-video.mp4'
 import logoImage from '@/assets/mbrhe-logo.png'
 import { useLogin, useUAEPassLogin, type LoginRequestWithRememberMe, type UAEPassLoginRequestWithRememberMe } from '@/hooks/api'
 import { UAE_PASS_AUTH_URL } from '@/config/api.config'
+import { useTranslation } from 'react-i18next'
 
 const UAE_PASS_CALLBACK_PATH = '/auth/callback'
 
 export function Login() {
+  const { t } = useTranslation()
   const [showPassword, setShowPassword] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -22,7 +24,7 @@ export function Login() {
 
   const handleLogin = async () => {
     if (!email || !password) {
-      setError('Please enter both email and password')
+      setError(t('login.errorEmailPassword'))
       return
     }
 
@@ -34,13 +36,12 @@ export function Login() {
         rememberMe,
       }
       await loginMutation.mutateAsync(loginData)
-      // Navigation happens automatically in useLogin hook's onSuccess
     } catch (err) {
       const errorMessage =
         (err as { response?: { data?: { message?: string } }; message?: string })?.response?.data
           ?.message ||
         (err as { message?: string })?.message ||
-        'Login failed. Please check your credentials and try again.'
+        t('login.errorLoginFailed')
       setError(errorMessage)
     }
   }
@@ -50,14 +51,12 @@ export function Login() {
     const redirectUri = `${window.location.origin}${UAE_PASS_CALLBACK_PATH}`
 
     if (UAE_PASS_AUTH_URL) {
-      // Production: redirect to UAE Pass; they will redirect back to /auth/callback?uaePassId=...
       const url = new URL(UAE_PASS_AUTH_URL)
       url.searchParams.set('redirect_uri', redirectUri)
       window.location.href = url.toString()
       return
     }
 
-    // Dev/demo: call backend directly with a test id (or redirect to callback with test id)
     try {
       const uaePassData: UAEPassLoginRequestWithRememberMe = {
         uaePassId: 'UAE-PASS-12345',
@@ -69,7 +68,7 @@ export function Login() {
         (err as { response?: { data?: { message?: string } }; message?: string })?.response?.data
           ?.message ||
         (err as { message?: string })?.message ||
-        'UAE Pass authentication failed. Please try again.'
+        t('login.errorUaePassFailed')
       setError(errorMessage)
     }
   }
@@ -98,10 +97,10 @@ export function Login() {
         {/* Left: Form */}
         <div className="flex-1 p-8 md:p-10 flex flex-col justify-center">
           <h1 className="text-2xl font-bold text-white mb-1">
-            Sign In To Your Account
+            {t('login.signInTitle')}
           </h1>
           <p className="text-sm text-brand-muted-text-dark mb-8">
-            Please enter your details
+            {t('login.enterDetails')}
           </p>
 
           <form
@@ -119,13 +118,13 @@ export function Login() {
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-white">Email</Label>
+              <Label htmlFor="email" className="text-white">{t('login.email')}</Label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-accent-dark pointer-events-none" />
                 <Input
                   id="email"
                   type="email"
-                  placeholder="Email"
+                  placeholder={t('login.email')}
                   value={email}
                   onChange={(e) => {
                     setEmail(e.target.value)
@@ -139,13 +138,13 @@ export function Login() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-white">Password</Label>
+              <Label htmlFor="password" className="text-white">{t('login.password')}</Label>
               <div className="relative">
                 <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-accent-dark pointer-events-none" />
                 <Input
                   id="password"
                   type={showPassword ? 'text' : 'password'}
-                  placeholder="Password"
+                  placeholder={t('login.password')}
                   value={password}
                   onChange={(e) => {
                     setPassword(e.target.value)
@@ -159,7 +158,7 @@ export function Login() {
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-brand-accent-dark"
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  aria-label={showPassword ? t('login.hidePassword') : t('login.showPassword')}
                 >
                   {showPassword ? (
                     <EyeOff className="w-5 h-5" />
@@ -179,7 +178,7 @@ export function Login() {
                 className="w-4 h-4 rounded border-brand-accent-dark/30 bg-transparent text-brand-accent-dark focus:ring-brand-accent-dark focus:ring-2"
               />
               <Label htmlFor="remember-me" className="ml-2 text-sm text-brand-muted-text-dark cursor-pointer">
-                Remember me
+                {t('login.rememberMe')}
               </Label>
             </div>
 
@@ -189,10 +188,10 @@ export function Login() {
               disabled={loginMutation.isPending || !email || !password}
             >
               <User className="w-5 h-5 mr-2" />
-              {loginMutation.isPending ? 'Signing In...' : 'Sign In'}
+              {loginMutation.isPending ? t('login.signingIn') : t('login.signIn')}
             </Button>
           </form>
-          <p className="text-center text-brand-secondary-text my-4">OR</p>
+          <p className="text-center text-brand-secondary-text my-4">{t('login.or')}</p>
           {/* UAE Pass Button */}
           <button
             type="button"
@@ -204,7 +203,7 @@ export function Login() {
               <img src="/src/assets/uae-pass.webp" alt="UAE Pass" className="w-full" />
             </span>
             <span className="text-base font-semibold">
-              {uaePassMutation.isPending ? 'Connecting...' : 'Continue with UAE PASS'}
+              {uaePassMutation.isPending ? t('login.connecting') : t('login.continueWithUaePass')}
             </span>
           </button>
         </div>
@@ -218,7 +217,7 @@ export function Login() {
               className="w-full h-14 mx-auto mb-4 object-contain"
             />
             <h2 className="text-4xl md:text-2xl font-semibold text-brand-accent-dark">
-              Legal Portal Solution
+              {t('app.title')}
             </h2>
           </div>
         </div>
