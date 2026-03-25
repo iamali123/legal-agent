@@ -24,3 +24,4 @@ API_IMPLEMENTATION.md
 *.njsproj
 *.sln
 *.sw?
+.env
